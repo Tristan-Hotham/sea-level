@@ -1,0 +1,209 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage{fontspec}
+\setmainfont{TeX Gyre Pagella}
+\newfontfamily\headfont{Inter}[UprightFont=*-ExtraBold,BoldFont=*-ExtraBold,Extension=.otf,Path=/usr/share/fonts/opentype/inter/]
+\usepackage[a4paper,margin=2.3cm]{geometry}
+\usepackage{graphicx,booktabs,float,caption,array}
+\usepackage[hidelinks]{hyperref}
+\usepackage{titlesec}
+\usepackage{setspace}
+\setstretch{1.05}
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\bottomfraction}{0.8}
+\renewcommand{\textfraction}{0.1}
+\renewcommand{\floatpagefraction}{0.75}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.55em}
+\titleformat{\section}{\headfont\Large}{\thesection}{0.8em}{}
+\titleformat{\subsection}{\headfont\large}{\thesubsection}{0.8em}{}
+\captionsetup{font=small,labelfont=bf}
+\urlstyle{same}
+\hypersetup{pdftitle={Drowned and Rising: A Bathtub Model of Britain and the World from the Last Glacial Maximum to an Ice-Free Earth},pdfauthor={Tristan Hotham}}
+
+\begin{document}
+\begin{center}
+{\Large\bfseries Drowned and Rising:\\[2pt] A Bathtub Model of Britain and the World from the\\[2pt] Last Glacial Maximum to an Ice-Free Earth\par}
+\vspace{1.2em}
+{\large Tristan Hotham\par}
+\vspace{0.3em}
+{\small Independent researcher\\
+ORCID: 0000-0003-4931-9349\\
+DOI: \href{https://doi.org/10.5281/zenodo.23732578}{https://doi.org/10.5281/zenodo.23732578}\par}
+\vspace{0.8em}
+2026
+\end{center}
+
+\begin{quote}
+\small
+\begin{center}\textbf{Abstract}\end{center}
+Sea level has changed by more than 120 metres since the last Ice Age and could change by tens of metres more if the remaining ice sheets melted. I built a simple, openly documented bathtub model to show what that range means for Britain and the world, and an interactive map that lets readers set the sea anywhere from {{levels.0|sg}} m to +70 m. The model uses AWS Terrain Tiles elevation and bathymetry at three resolutions (about 10 km worldwide, 700 m around Britain and 190 m for UK statistics), fixes today's coast with Natural Earth, and floods only cells joined to the ocean. At the Ice Age low of {{levels.5|sg}} m it exposes {{at.m125.world_gained|mkm}} million km\textsuperscript{2} of sea floor outside Antarctica, and almost all of the southern North Sea becomes dry land. Using today's seabed, Britain's last land link to the continent goes under at {{island.gb_continent|sg}} m and Ireland's link to Britain at {{island.ie_gb|sg}} m. At +7 m, about the sea-level equivalent of the Greenland ice sheet, the model drowns {{at.p7.uk_lost_share|pct1}} of the UK's land and reaches the centre points of {{at.p7.uk_towns|int}} UK towns and neighbourhoods home to {{at.p7.msoa_pop_share|pct1}} of the people of England and Wales. At +70 m those figures rise to {{at.p70.uk_lost_share|pct}} of the land and {{at.p70.msoa_pop_share|pct}} of the people, and worldwide to {{at.p70.world_lost_share|pct1}} of land outside Antarctica and {{at.p70.cities_n|int}} cities with {{at.p70.cities_pop|bn}} billion people. The model ignores defences, tides, land movement and changes to the seabed; it describes broad shapes, not local flood risk.
+
+\textbf{Keywords:} sea level; bathtub model; Doggerland; Last Glacial Maximum; land bridges; sea-level rise; ice sheets; United Kingdom; digital elevation model; open data
+\end{quote}
+
+\section{Introduction}
+
+The coast of Britain looks permanent, but on the scale of human prehistory it is new. At the Last Glacial Maximum, between about 26,000 and 20,000 years ago, so much water was held in ice sheets that global sea level was about 120 to 125 m lower than today (Wikipedia contributors 2026a; 2026b). The floor of the southern North Sea was dry land, now called Doggerland, and Great Britain was a peninsula of Europe. Doggerland was inundated between about 10,000 and 7,000 years ago, and the tsunami raised by the Storegga submarine landslide off Norway, about 8,200 years ago, may have flooded much of what was left (Wikipedia contributors 2026a).
+
+Looking forward, the Intergovernmental Panel on Climate Change's Sixth Assessment Report (AR6) projects a likely global mean rise by 2100, relative to 1995 to 2014, of 0.28 to 0.55 m under a very low emissions scenario and 0.63 to 1.01 m under a very high one; over the next 2,000 years it expects about 2 to 3 m if warming is limited to 1.5\,\textdegree C, 2 to 6 m at 2\,\textdegree C and 19 to 22 m with 5\,\textdegree C of warming (IPCC 2021; 2023). The ice that remains is large: the Greenland ice sheet holds about 7.4 m of global sea level and the Antarctic ice sheet about 58 m (Morlighem et al. 2020; Wikipedia contributors 2026c).
+
+These numbers are easy to state and hard to picture. This note asks a deliberately simple question: if the sea stood at a given level, everything else being as it is today, which land would be sea and which sea would be land? I answer it with a bathtub model, the simplest flood model there is, and I make the answer explorable in an interactive map at \url{https://tristan-hotham.github.io/sea-level/}, where readers move a slider from the Ice Age low to an ice-free Earth and watch the map and the numbers change. The aim is to show the shape of things: when Britain was joined to Europe, which land bridges opened where, how much of the UK and the world lies within tens of metres of the sea, and where the first metres would go. The model cannot tell anyone whether their home will flood, and I do not use it for that.
+
+\section{Data}
+
+\subsection{Elevation and bathymetry}
+
+The model is built on AWS Terrain Tiles, the global elevation tiles first produced by Mapzen and now hosted as an open dataset on Amazon Web Services (Tilezen 2026). The tiles merge land elevation and sea-floor depth from several sources, including ETOPO1 (Amante and Eakins 2009), GMTED2010 (Danielson and Gesch 2011), the Shuttle Radar Topography Mission (Farr et al. 2007) and, in Europe, EU-DEM, into web-mercator image tiles that encode height in metres. I used three extracts:
+\begin{itemize}
+\item the whole world at zoom 4: 4,096 by 4,096 cells, about 9.8 km wide at the equator and 6 km at 52\textdegree\ N, with heights in whole metres;
+\item Britain, Ireland and the North Sea at zoom 7 (from 16.9\textdegree\ W to 16.9\textdegree\ E and about 45\textdegree\ to 65\textdegree\ N): 3,072 by 3,072 cells of about 700 m at British latitudes;
+\item Britain and Ireland at zoom 10, about 95 m at 52\textdegree\ N, which I averaged in 2 by 2 blocks to zoom 9 (about 190 m) for the UK statistics.
+\end{itemize}
+
+\subsection{Coast, countries and places}
+
+Today's coast and country outlines come from Natural Earth's 1:10m land and admin-0 country layers (Natural Earth 2026). World cities are the GeoNames list of {{cities.n|int}} places with more than 15,000 people outside Antarctica, each with a population and a point height from SRTM or GTOPO30 averaged over a 90 m or 900 m cell (GeoNames 2026). UK places are the {{uk_towns.n|int}} cities and towns in Ordnance Survey's OS Open Names (Ordnance Survey 2026). People in England and Wales are counted with Census 2021 usual resident populations for the {{uk_msoa.n|int}} Middle Layer Super Output Areas (MSOAs) and their population-weighted centroids; towns were matched to 2022 built-up areas and their Census 2021 populations as in my earlier study of post boxes (Office for National Statistics 2023a; 2023b; Hotham 2026).
+
+\subsection{History and projections}
+
+The figures for the Last Glacial Maximum, Doggerland and the Greenland ice sheet are from English Wikipedia (Wikipedia contributors 2026a; 2026b; 2026c); the Antarctic figure is BedMachine Antarctica's 57.9 m (Morlighem et al. 2020); the projections are IPCC AR6's (IPCC 2021; 2023). I use these only to label the slider and to frame results; none of them enters the model.
+
+\section{Methods}
+
+\subsection{The bathtub}
+
+For each sea level $L$ on a ladder of {{meta.levels_n|int}} levels from {{levels.0|sg}} m to +70 m, 1 m apart and 0.25 m apart between $-$2 and +3 m, a grid cell is sea when its height is below $L$ and it is joined to the ocean through other cells below $L$, counting cells that touch at edges or corners. I find the ocean with Natural Earth: every cell outside Natural Earth's land is ocean except the Caspian Sea, which I treat as a lake. Today's ocean cells are given a height of at most $-$1 m so that the map at 0 m reproduces today's coast. Two rules keep the model consistent with today: at or below 0 m, today's land never becomes sea, since a falling sea cannot flood land; at or above 0 m, today's sea never becomes land. A falling sea leaves enclosed basins on the sea floor as water, whether lakes or seas. For each cell I store the first level at which it is sea, a single byte, which is all the interactive page needs to redraw the map at any level in the browser.
+
+Land that the elevation model already puts below today's sea level is a special case. Some is real (polders, fens, the Caspian lowland), and some is an artefact of coarse cells that average land and sea at the coast. In a bathtub without defences all of it floods at the first rise if the ocean can reach it. I therefore report land drowned as land with a model height at or above 0 m, and give the low-lying land separately.
+
+\subsection{Areas, places and people}
+
+Areas are summed over cells using the web-mercator cell area at each latitude. Worldwide figures leave out everything south of 60\textdegree\ S, because Antarctica's land surface is mostly the ice sheet itself and a bathtub over it would be meaningless; the map draws Antarctica as it is today. UK and Ireland land areas come from the 190 m grid and the Natural Earth country outlines; the southern North Sea figures from the 700 m grid within a box from {{doggerland.box.lat0|raw}}\textdegree\ to {{doggerland.box.lat1|raw}}\textdegree\ N and {{doggerland.box.lon0_abs|raw}}\textdegree\ W to {{doggerland.box.lon1|raw}}\textdegree\ E, which I call the Doggerland box.
+
+A place is under water at level $L$ when its point height is below $L$ and the modelled sea at $L$ reaches within one grid cell of it: about 10 km for world cities (700 m inside the Britain and North Sea window) and about 190 m for UK places. Point heights are GeoNames' own for world cities and the zoom-10 elevation, interpolated bilinearly, for UK places and MSOA centroids. Nothing floods below the first positive level. A town is a place, not a point; the measure says only whether its central point is reached.
+
+\subsection{Land bridges}
+
+For pairs of places on either side of a strait I found the highest level at or below 0 m at which they are joined by land, using cells that touch at edges (the complement of the sea's 8-connectivity). Britain and the continent (London and Paris) and Ireland and Britain (Dublin and Liverpool) use the 700 m grid and, as a check, the 10 km grid; the others use the 10 km grid. I dropped two pairs from the published list whose straits are narrower than a 10 km cell or whose result depended on a single cell (Sicily and Italy; Japan and Korea).
+
+\section{Results}
+
+\subsection{The Ice Age low}
+
+At {{levels.5|sg}} m, the model exposes {{at.m125.world_gained|mkm}} million km\textsuperscript{2} of sea floor outside Antarctica, an area {{gain_vs_land|pct}} the size of the {{world_land_m|raw}} million km\textsuperscript{2} of land in the grid today (Figure~\ref{fig:world}). The great continental shelves come up: the plain between Siberia and Alaska, the Sunda shelf joining Borneo, Sumatra and Java to Asia, the Sahul shelf joining New Guinea and Australia, and the North Sea. At $-$60 m the exposed area is still {{at.m60.world_gained|mkm}} million km\textsuperscript{2}, and at $-$20 m {{at.m20.world_gained|mkm}} million.
+
+\begin{figure}[tbp]\centering
+\includegraphics[width=0.86\linewidth]{f_world.png}
+\caption{The world at {{levels.5|sg}} m and +70 m in the bathtub model (web-mercator, zoom 4, about 10 km cells; Antarctica as today). Elevation: AWS Terrain Tiles. Coast: Natural Earth.}\label{fig:world}
+\end{figure}
+
+\begin{figure}[tbp]\centering
+\includegraphics[width=\linewidth]{f_britain.png}
+\caption{Britain, Ireland and the North Sea at five sea levels (zoom 7, about 700 m cells). Purple marks land that the elevation model already puts below today's sea level.}\label{fig:britain}
+\end{figure}
+
+Around Britain (Figure~\ref{fig:britain}), the Doggerland box holds {{doggerland.max_km2|int}} km\textsuperscript{2} of dry land at the lowest level, almost all of its {{doggerland.sea_km2|int}} km\textsuperscript{2} of sea today. Figure~\ref{fig:dogger} shows how it drowns. The decline is gradual to about $-$50 m and then steep: {{at.m40.dogger|int}} km\textsuperscript{2} remain at $-$40 m and {{at.m20.dogger|int}} km\textsuperscript{2} at $-$20 m, most of the latter in strips along today's coasts. A point on the Dogger Bank, the high ground in the middle of the box, is last dry at {{dogger_bank.dry_at_or_below_m|sg}} m and is sea from {{dogger_bank.sea_from_m|sg}} m.
+
+\begin{figure}[tbp]\centering
+\includegraphics[width=0.9\linewidth]{f_dogger.png}
+\caption{Dry land in the Doggerland box ({{doggerland.box.lat0|raw}}\textdegree\ to {{doggerland.box.lat1|raw}}\textdegree\ N, {{doggerland.box.lon0_abs|raw}}\textdegree\ W to {{doggerland.box.lon1|raw}}\textdegree\ E) at each sea level below today's, on the 700 m grid, with the levels at which three links break.}\label{fig:dogger}
+\end{figure}
+
+\subsection{When Britain became an island}
+
+Using today's seabed, Britain's last land link to the continent goes under in the model when the sea reaches {{island.gb_continent|sg}} m on the 700 m grid ({{island.gb_continent_z4|sg}} m on the 10 km grid). Ireland's last link to Britain goes under earlier, at {{island.ie_gb|sg}} m ({{island.ie_gb_z4|sg}} m on the 10 km grid). Table~\ref{tab:bridges} and Figure~\ref{fig:bridges} list these and six other land bridges.
+
+{{TABLE_BRIDGES}}
+
+\begin{figure}[tbp]\centering
+\includegraphics[width=0.88\linewidth]{f_bridges.png}
+\caption{The highest sea level at which each pair of places is joined by land on today's seabed.}\label{fig:bridges}
+\end{figure}
+
+I do not convert these levels into dates. The seabed of 8,000 or 10,000 years ago was not today's: tidal currents and rivers have moved sediment, coasts have eroded, and the land itself has moved since the ice melted, rising where the ice was thick and sinking around it. A sill that is 30 m deep today may have been shallower or deeper then, and the sea did not rise evenly everywhere. What the model can say with more confidence is the order of events around Britain: the link to Ireland broke before the link to the continent, and by the time Britain became an island most of the southern North Sea floor was already under water. Those patterns follow from the broad shape of the seabed, which a few metres of sediment or uplift are unlikely to reverse. Three of the world pairs (Sri Lanka and India at $-$1 m, Sahul at $-$5 m and Tasmania at $-$23 m) depend on shallow straits that the 10 km grid represents crudely; I report them as the grid sees them.
+
+\subsection{The first metres}
+
+Above today's level the bathtub is at its weakest, and I want to be explicit about why. The world grid stores whole metres in 10 km cells, so its numbers change in steps: between +0.25 and +1 m it drowns the same {{at.p1.world_lost|int}} km\textsuperscript{2}, the land in cells with a height of exactly 0 m, together with {{at.p1.world_lost_b0|mkm2}} million km\textsuperscript{2} that it already puts below sea level. Much of the second figure is coarse cells at the coast rather than real low ground. For the UK the finer grid is more informative: at +1 m it drowns {{at.p1.uk_lost|int}} km\textsuperscript{2} of land above today's sea level and reaches {{at.p1.uk_lost_b0|int}} km\textsuperscript{2} of the {{uk.below0_km2|int}} km\textsuperscript{2} that it places below sea level, land kept dry today by banks, pumps and sea walls. In this model no OS town centre is reached at +1 m; the first are reached between +1.5 and +2 m. GeoNames lists {{at.p1.cities_n|int}} cities worldwide whose point height is at or below 1 m and whose cell is reached by the sea, home to {{at.p1.cities_pop|mn}} million people. Elevation models derived from radar such as SRTM tend to overstate the height of densely built and vegetated coastal land, so counts of this kind are more likely to be too low than too high (Kulp and Strauss 2019); but the bigger limitation is that real exposure by 2100 will be governed by storms, tides, subsidence and defences, which the model leaves out.
+
+\subsection{Greenland and beyond}
+
+Table~\ref{tab:levels} summarises the model at the marked levels and Figure~\ref{fig:curves} shows the curves. At +7 m the model drowns {{at.p7.uk_lost|int}} km\textsuperscript{2} of the UK ({{at.p7.uk_lost_share|pct1}} of its land), reaches the centre points of {{at.p7.uk_towns|int}} of the {{uk_towns.n|int}} OS towns and cities, and reaches MSOAs home to {{at.p7.msoa_pop|int}} people in England and Wales ({{at.p7.msoa_pop_share|pct1}}). Worldwide it drowns {{at.p7.world_lost|mkm2}} million km\textsuperscript{2} ({{at.p7.world_lost_share|pct1}} of land outside Antarctica) and reaches {{at.p7.cities_n|int}} cities with {{at.p7.cities_pop|mn}} million people. Among countries with at least 20,000 km\textsuperscript{2} of land, the largest shares lost at +7 m are the Netherlands ({{top_countries.p7.by_share.0.share|pct}}), Bangladesh ({{top_countries.p7.by_share.1.share|pct}}) and Vietnam ({{top_countries.p7.by_share.2.share|pct}}) on the 10 km grid; on the 700 m grid the Netherlands loses {{nld.p7|pct}}.
+
+{{TABLE_LEVELS}}
+
+\begin{figure}[tbp]\centering
+\includegraphics[width=\linewidth]{f_curves.png}
+\caption{Left: change in land area outside Antarctica, compared with today, at each sea level; the violet line adds land the model already puts below today's sea level. Right: share of UK land drowned, share of England and Wales residents whose MSOA centroid is under water, and share of OS Open Names towns and cities whose centre point is under water.}\label{fig:curves}
+\end{figure}
+
+The UK curves have a clear shape. The share of people rises faster than the share of land from about +7 m, because people live disproportionately low: in river valleys, estuaries and coastal plains. By +20 m about {{uk20_pop|pct}} of the people of England and Wales live in neighbourhoods whose centre is under water against {{uk20_land|pct}} of the UK's land; by +70 m the figures are {{at.p70.msoa_pop_share|pct}} and {{at.p70.uk_lost_share|pct}}. Ireland loses {{ie70|pct}} of its land at +70 m.
+
+At +58 m, roughly the Antarctic ice sheet's share, the world has lost {{at.p58.world_lost_share|pct1}} of its land outside Antarctica, and at +70 m {{at.p70.world_lost_share|pct1}}, or {{at.p70.world_lost|mkm2}} million km\textsuperscript{2}, with a further {{at.p70.world_lost_b0|mkm2}} million km\textsuperscript{2} of land already below sea level. The largest areas lost at +70 m are in Russia, Brazil and the United States; the largest shares among large countries in the Netherlands ({{top_countries.p70.by_share.0.share|pct}}), Denmark ({{top_countries.p70.by_share.1.share|pct}}) and Bangladesh ({{top_countries.p70.by_share.2.share|pct}}). Cities are hit harder than land (Figure~\ref{fig:cities}): {{at.p70.cities_n|int}} of the {{cities.n|int}} GeoNames cities, with {{at.p70.cities_pop|bn}} billion people, have their centre under water at +70 m.
+
+\begin{figure}[tbp]\centering
+\includegraphics[width=0.95\linewidth]{f_cities.png}
+\caption{GeoNames cities of more than 15,000 people whose centre point is below the sea level and reached by the modelled sea: population (left) and number (right).}\label{fig:cities}
+\end{figure}
+
+\section{Discussion}
+
+Two things stand out. The first is how much of Britain's prehistory sits on the sea floor. Within the range of sea levels of the last 20,000 years, the Doggerland box changes from almost entirely land to entirely sea, and most of that change, in the model, happens between about $-$50 and $-$20 m. The second is how unevenly the land and people of the UK are distributed with height. The first ten metres above today's sea hold a share of the population larger than their share of the land, and the gap widens upward. That is a statement about geography, not a forecast: it says where things are, not when the sea will reach them.
+
+The bathtub is often criticised, rightly, as a tool for local flood risk, and I have tried not to use it as one. Its merits are transparency and consistency: every cell follows the same rule, every number can be traced, and readers can test the model against what they know. Its connectivity rule removes the worst errors of a pure height threshold, such as flooding inland depressions that the sea cannot reach, and the separation of land already below sea level shows where defences, not height, keep the land dry.
+
+\section{Limitations}
+
+The model has no tides, storms, waves, rivers, groundwater or defences, and a flat sea surface. It has no change to the land or the seabed: no glacial isostatic adjustment, no subsidence, no erosion or sedimentation, and no change in the gravity field and crust that melting ice sheets would cause, which would make the rise uneven around the world. The elevation data mix sources of different ages and accuracy; sea-floor depths are interpolated in many places; coarse cells at the coast average land and sea; lakes are mostly recorded at their surface; and the world grid holds whole metres. Antarctica is left out of world figures. Point heights for cities are averages over 90 m or 900 m cells, and the test for a place is whether the sea reaches within one cell. The population measure covers England and Wales only and uses MSOA centroids. The marked historical and future levels are labels from secondary sources, not outputs of the model. All of this makes the model suitable for broad patterns and comparisons and unsuitable for statements about single places.
+
+\section{Conclusion}
+
+A bathtub model on open global elevation data reproduces the familiar story of Doggerland in outline: Ireland separates from Britain first, at {{island.ie_gb|sg}} m on today's seabed, and Britain from the continent at {{island.gb_continent|sg}} m, with the last land across the southern North Sea. Upward, it shows that the UK's people are concentrated in low land, so that a third of the land at +70 m holds well over half of the people of England and Wales. The interactive version lets anyone explore the whole range for themselves, with the caveats in plain view.
+
+\section*{Data and code availability}
+
+The interactive page is at \url{https://tristan-hotham.github.io/sea-level/}. Code and derived data are at \url{https://github.com/Tristan-Hotham/sea-level} and archived with this paper at \url{https://doi.org/10.5281/zenodo.23732578}. The derived tables (land lost and gained at each level, by country, cities, UK towns and land bridges) are released under CC BY 4.0, with the credits required by the sources: AWS Terrain Tiles and its contributing datasets; Natural Earth (public domain); GeoNames (CC BY 4.0); OS Open Names and ONS data (Open Government Licence v3.0; contains OS data \textcopyright\ Crown copyright and database right 2026).
+
+\section*{Statement on the use of AI}
+
+I wrote the text, with drafting and editing assistance from Claude (Anthropic), which also helped prepare the analysis code. I reviewed and checked all text and results.
+
+\section*{References}
+\begin{small}
+\setlength{\parskip}{0.3em}
+
+Amante, C. and Eakins, B. W. (2009) \emph{ETOPO1 1 Arc-Minute Global Relief Model: Procedures, Data Sources and Analysis}. NOAA Technical Memorandum NESDIS NGDC-24. National Geophysical Data Center, NOAA.
+
+Danielson, J. J. and Gesch, D. B. (2011) \emph{Global Multi-resolution Terrain Elevation Data 2010 (GMTED2010)}. U.S. Geological Survey Open-File Report 2011-1073.
+
+Farr, T. G. et al. (2007) The Shuttle Radar Topography Mission. \emph{Reviews of Geophysics} 45, RG2004.
+
+GeoNames (2026) cities15000. \url{https://download.geonames.org/export/dump/} (CC BY 4.0).
+
+Hotham, T. (2026) What's the King on Your Postbox? Royal Cyphers on the Post Boxes of the United Kingdom in OpenStreetMap. Zenodo. \url{https://doi.org/10.5281/zenodo.23729633}
+
+IPCC (2021) Summary for Policymakers. In: \emph{Climate Change 2021: The Physical Science Basis. Contribution of Working Group I to the Sixth Assessment Report of the Intergovernmental Panel on Climate Change}. Cambridge University Press.
+
+IPCC (2023) \emph{Climate Change 2023: Synthesis Report}. IPCC, Geneva. Figure 3.4.
+
+Kulp, S. A. and Strauss, B. H. (2019) New elevation data triple estimates of global vulnerability to sea-level rise and coastal flooding. \emph{Nature Communications} 10, 4844.
+
+Morlighem, M. et al. (2020) Deep glacial troughs and stabilizing ridges unveiled beneath the margins of the Antarctic ice sheet. \emph{Nature Geoscience} 13, 132 to 137.
+
+Natural Earth (2026) 1:10m Cultural and Physical Vectors. \url{https://www.naturalearthdata.com} (public domain).
+
+Office for National Statistics (2023a) Census 2021: TS001 Number of usual residents in households and communal establishments. Nomis. Open Government Licence v3.0.
+
+Office for National Statistics (2023b) Middle layer Super Output Areas (December 2021) population weighted centroids; Built-up areas (2022); LSOA to built-up area lookup. ONS Open Geography Portal. Open Government Licence v3.0.
+
+Ordnance Survey (2026) OS Open Names. Open Government Licence v3.0.
+
+Tilezen (2026) Terrain Tiles: data sources and attribution. \url{https://github.com/tilezen/joerd/blob/master/docs/attribution.md}; tiles at \url{https://registry.opendata.aws/terrain-tiles/}.
+
+Wikipedia contributors (2026a) Doggerland. \emph{Wikipedia, The Free Encyclopedia}. \url{https://en.wikipedia.org/wiki/Doggerland} (CC BY-SA 4.0).
+
+Wikipedia contributors (2026b) Last Glacial Maximum. \emph{Wikipedia, The Free Encyclopedia}. \url{https://en.wikipedia.org/wiki/Last_Glacial_Maximum} (CC BY-SA 4.0).
+
+Wikipedia contributors (2026c) Greenland ice sheet. \emph{Wikipedia, The Free Encyclopedia}. \url{https://en.wikipedia.org/wiki/Greenland_ice_sheet} (CC BY-SA 4.0).
+\end{small}
+\end{document}

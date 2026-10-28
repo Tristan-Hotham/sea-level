@@ -1,0 +1,782 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Drowned and Rising</title>
+<meta name="description" content="Move the sea from the Ice Age to a world without ice: a bathtub model of Britain and the world at every sea level, with Doggerland, land bridges, cities and UK towns.">
+<meta property="og:title" content="Drowned and rising: Britain and the world at every sea level">
+<meta property="og:description" content="A sea-level slider from {{levels.0|int}} m to +70 m. In this model Britain stays joined to the continent until the sea is {{island.gb_continent_abs|int}} m below today's; at +70 m a third of the UK's land is under water.">
+<meta property="og:image" content="https://tristan-hotham.github.io/sea-level/header.png">
+<meta property="og:url" content="https://tristan-hotham.github.io/sea-level/">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800;9..144,900&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+/* Sea glass and sand. The map itself keeps one palette in both themes; the page around it follows the reader's theme. */
+:root{
+  --bg:#F3F0E6; --panel:#E6E1D2; --fg:#13242C; --muted:#5B6869; --rule:#D5CFBD; --card:#FBF9F2; --border:#C2BBA5;
+  --hot:#C8492F; --sea:#1F5F7A; --glass:#5FA8A6; --sand:#C9A55A; --violet:#7D5BA6; --land:#9AA77E;
+  --display:"Fraunces",Georgia,"Times New Roman",serif;
+  --body:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#10181B; --panel:#1A2427; --fg:#E8EEEC; --muted:#9AA8A8; --rule:#2B3739; --card:#162023; --border:#3C4B4E;
+  --hot:#F07A5E; --sea:#7FB8D0; --glass:#86C9C4; --sand:#E2C27E; --violet:#B59AD8; --land:#B9C59C; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10181B; --panel:#1A2427; --fg:#E8EEEC; --muted:#9AA8A8; --rule:#2B3739; --card:#162023; --border:#3C4B4E;
+  --hot:#F07A5E; --sea:#7FB8D0; --glass:#86C9C4; --sand:#E2C27E; --violet:#B59AD8; --land:#B9C59C; color-scheme:dark}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:400 18px/1.62 var(--body);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));overflow-x:hidden}
+.wrap{max-width:700px;margin:0 auto;padding-block:28px 64px}
+.wrap .bleed{width:min(1120px,calc(100vw - 32px));margin-left:calc((100% - min(1120px,100vw - 32px))/2)}
+a{color:inherit;text-decoration-color:var(--glass);text-underline-offset:3px}
+.kicker{font:500 12px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.kicker b{background:var(--sea);color:#fff;padding:5px 8px;font-weight:500}
+header.hero{border-bottom:6px double var(--fg);padding-bottom:22px;margin-top:18px;position:relative}
+h1{font:900 clamp(46px,12vw,104px)/.88 var(--display);letter-spacing:-.025em;margin:0;text-wrap:balance}
+h1 em{font-style:normal;color:var(--sea)}
+h1 span{color:var(--hot)}
+.dek{font-size:21px;line-height:1.42;margin:14px 0 0;max-width:48ch}
+.byline{font:400 13px/1.4 var(--mono);color:var(--muted);margin-top:14px}
+h2{font:800 34px/1.04 var(--display);letter-spacing:-.01em;margin:56px 0 10px;text-wrap:balance}
+h2 .n{font:500 13px/1 var(--mono);color:var(--sea);display:block;letter-spacing:.1em;margin-bottom:10px}
+h3{font:600 20px/1.25 var(--display);margin:28px 0 6px}
+p{margin:0 0 16px}
+li,.src,footer p{overflow-wrap:anywhere}
+.lede::first-letter{font:900 72px/.8 var(--display);float:left;margin:6px 10px 0 0;color:var(--sea)}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);margin:26px 0 8px}
+.stats div{background:var(--card);padding:14px 12px}
+.stats b{display:block;font:900 clamp(26px,5.6vw,38px)/1 var(--display)}
+.stats b.s{color:var(--sea)} .stats b.h{color:var(--hot)} .stats b.d{color:var(--sand)}
+.stats span{font:400 12px/1.35 var(--mono);color:var(--muted);display:block;margin-top:6px}
+@media (max-width:600px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* the instrument */
+.inst{background:var(--card);border:1px solid var(--border);border-top:6px solid var(--sea);margin:24px 0 10px}
+.inst-top{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px 16px;align-items:center;padding:14px 14px 4px}
+.level{font:900 clamp(40px,9vw,64px)/.9 var(--display);letter-spacing:-.02em;min-width:4.2ch;font-variant-numeric:tabular-nums}
+.level small{font:500 15px/1 var(--mono);letter-spacing:0;color:var(--muted);margin-left:2px}
+.level.up{color:var(--hot)} .level.down{color:var(--sand)} .level.zero{color:var(--sea)}
+.ctx{font:400 14px/1.45 var(--body);min-width:0}
+.ctx b{font:600 16px/1.25 var(--display);display:block}
+.playb{font:500 13px/1 var(--mono);background:var(--fg);color:var(--bg);border:0;border-radius:3px;padding:11px 14px;cursor:pointer;min-height:40px;white-space:nowrap}
+.slidewrap{padding:4px 14px 2px;position:relative}
+input[type=range]{width:100%;margin:10px 0 0;accent-color:var(--sea);height:30px;touch-action:none}
+.ticks{position:relative;height:40px;font:400 11px/1.15 var(--mono);color:var(--muted);margin:0 7px}
+.ticks button{position:absolute;transform:translateX(-50%);background:none;border:0;padding:3px 0 0;cursor:pointer;color:inherit;font:inherit;text-align:center;white-space:nowrap}
+.ticks button::before{content:"";display:block;width:1px;height:8px;background:var(--muted);margin:0 auto 3px}
+.ticks button.last{transform:translateX(-100%);text-align:right}
+.ticks button.last::before{margin:0 0 3px auto}
+.band{position:absolute;top:22px;height:5px;background:var(--hot);border-radius:2px;pointer-events:none;opacity:.9}
+.ticks button:hover,.ticks button:focus-visible{color:var(--fg)}
+@media (max-width:600px){.ticks .opt{display:none}}
+@media (max-width:600px){.inst-top{grid-template-columns:auto 1fr}.ctx{grid-column:1/-1;grid-row:2;min-height:6.2em}.playb{justify-self:end}}
+@media (min-width:601px){.ctx{min-height:3em}}
+.marks{display:flex;gap:6px;flex-wrap:wrap;padding:6px 14px 12px}
+.btn{font:500 12px/1 var(--mono);background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:3px;padding:8px 10px;cursor:pointer;min-height:36px}
+.btn[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.btn:focus-visible,input:focus-visible,.playb:focus-visible,summary:focus-visible{outline:2px solid var(--hot);outline-offset:2px}
+.mapbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:0 14px 10px}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:3px;overflow:hidden;flex-wrap:wrap}
+.seg .btn{border:0;border-radius:0;border-right:1px solid var(--border)}
+.seg .btn:last-child{border-right:0}
+.chk{font:400 12px/1.2 var(--mono);color:var(--muted);display:inline-flex;gap:6px;align-items:center;cursor:pointer}
+.chk input{accent-color:var(--sea);width:16px;height:16px}
+#map{height:620px;background:#1D4766;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+@media (max-width:600px){#map{height:66vh;min-height:380px}}
+.leaflet-container{font:400 12px/1.4 var(--mono)}
+.leaflet-tile{image-rendering:pixelated}
+.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--card);color:var(--fg);border-radius:3px;box-shadow:0 2px 10px rgba(0,0,0,.25)}
+.leaflet-popup-content{margin:12px 14px;font:400 12.5px/1.45 var(--mono);min-width:200px}
+.leaflet-container a.leaflet-popup-close-button{color:var(--muted)}
+.leaflet-bar a,.leaflet-bar a:hover{background:var(--card);color:var(--fg);border-bottom-color:var(--border)}
+.leaflet-control-attribution{background:color-mix(in srgb,var(--card) 85%,transparent)!important;color:var(--muted)}
+.leaflet-control-attribution a{color:var(--fg)}
+.pop b.t{font:600 17px/1.2 var(--display);display:block;margin-bottom:2px}
+.pop .c{color:var(--muted);margin-bottom:6px}
+.pop .w{color:var(--muted);font-size:11.5px;margin-top:6px;display:block}
+#overlay{position:absolute;inset:0;pointer-events:none;z-index:450}
+.mapwrap{position:relative}
+.loading{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:460;font:500 13px/1 var(--mono);background:var(--card);color:var(--fg);padding:10px 12px;border:1px solid var(--border);border-radius:3px}
+.key{display:flex;gap:6px 14px;flex-wrap:wrap;font:400 12px/1.3 var(--mono);color:var(--muted);padding:10px 14px}
+.key i{display:inline-block;width:12px;height:12px;margin-right:6px;vertical-align:-1px;border:1px solid rgba(0,0,0,.15)}
+.readout{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--rule);border-top:1px solid var(--rule)}
+.readout div{background:var(--card);padding:12px 12px 12px}
+.readout b{display:block;font:800 clamp(21px,4.2vw,30px)/1.05 var(--display);font-variant-numeric:tabular-nums}
+.readout span{display:block;font:400 12px/1.4 var(--mono);color:var(--muted);margin-top:5px}
+.readout em{font-style:normal;color:var(--fg)}
+@media (max-width:760px){.readout{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.bridges{display:flex;flex-wrap:wrap;gap:6px;padding:12px 14px 14px;border-top:1px solid var(--rule)}
+.bridges .lab0{font:500 12px/1.3 var(--mono);color:var(--muted);width:100%}
+.chip{font:400 12px/1.2 var(--mono);padding:7px 9px;border-radius:999px;border:1px solid var(--border);color:var(--muted);background:var(--bg);cursor:pointer}
+.chip.on{background:var(--sand);border-color:var(--sand);color:#2A2210}
+.chip b{font-weight:500}
+.figure{margin:26px 0 30px}
+.fig-h{font:600 19px/1.25 var(--display);margin:0 0 4px}
+.fig-sub{font:400 13px/1.45 var(--mono);color:var(--muted);margin:0 0 12px}
+.src{font:400 12px/1.45 var(--mono);color:var(--muted);margin-top:10px}
+.chart{width:100%;position:relative}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+svg text{font-family:var(--mono);fill:var(--fg)}
+.lab{font-size:12px}.lab.m{fill:var(--muted)}.lab.b{font-weight:500}
+.tip{position:absolute;pointer-events:none;background:var(--fg);color:var(--bg);font:400 12px/1.45 var(--mono);padding:8px 10px;border-radius:3px;max-width:280px;z-index:1000;transform:translate(-50%,calc(-100% - 12px));display:none}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}
+@media (max-width:760px){.grid2{grid-template-columns:1fr}}
+table.t{width:100%;border-collapse:collapse;font:400 13px/1.35 var(--mono)}
+table.t th{text-align:left;font-weight:500;color:var(--muted);border-bottom:2px solid var(--fg);padding:6px 8px 6px 0}
+table.t td{border-bottom:1px solid var(--rule);padding:7px 8px 7px 0;vertical-align:top}
+table.t td.num,table.t th.num{text-align:right;white-space:nowrap}
+table.t td small{color:var(--muted);display:block}
+table.t tr.go{cursor:pointer}
+table.t tr.go:hover td{background:var(--panel)}
+.bar{height:8px;background:var(--hot);border-radius:1px;margin-top:4px;opacity:.85}
+.searchbox{position:relative;flex:1 1 260px;min-width:0}
+input[type=search]{font:400 15px/1 var(--mono);background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:3px;padding:10px 11px;min-height:40px;width:100%}
+.suggest{position:absolute;left:0;right:0;top:100%;margin:2px 0 0;padding:0;list-style:none;background:var(--card);border:1px solid var(--border);z-index:1001;font:400 13px/1.3 var(--mono);display:none;max-height:320px;overflow:auto}
+.suggest li{padding:8px 10px;cursor:pointer;border-bottom:1px solid var(--rule)}
+.suggest li span{color:var(--muted)}
+.suggest li[aria-selected="true"],.suggest li:hover{background:var(--panel)}
+.finder{background:var(--card);border:1px solid var(--border);border-top:6px solid var(--hot);padding:16px;margin:20px 0 14px}
+#answer{min-height:24px;margin-top:10px}
+#answer .big{font:800 clamp(22px,4.6vw,30px)/1.15 var(--display);margin:6px 0 8px;text-wrap:balance}
+#answer .pn{font:400 12px/1.5 var(--mono);color:var(--muted)}
+.pull{font:600 26px/1.25 var(--display);border-left:6px solid var(--sea);padding:4px 0 4px 18px;margin:30px 0}
+.note{background:var(--panel);border:1px solid var(--rule);padding:14px 16px;font-size:16px;margin:22px 0}
+.note h3{margin-top:0}
+.note.warn{border-left:6px solid var(--hot)}
+details{margin:14px 0}
+summary{font:500 13px/1.4 var(--mono);cursor:pointer;color:var(--fg);padding:8px 0}
+.cta{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}
+.cta a{font:500 13px/1 var(--mono);text-decoration:none;border:1px solid var(--fg);padding:11px 14px;border-radius:3px}
+.cta a.p{background:var(--sea);border-color:var(--sea);color:#fff}
+footer{border-top:6px double var(--fg);margin-top:56px;padding-top:16px;font:400 13px/1.55 var(--mono);color:var(--muted)}
+footer p{margin:0 0 10px}
+.theme{position:fixed;right:12px;bottom:12px;z-index:1002}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media print{.theme,.mapbar,.marks{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="kicker"><b>Data study</b><span>Sea level</span><span>Ice Age to ice-free</span></div>
+<header class="hero">
+  <h1><em>Drowned</em> and <span>rising</span></h1>
+  <p class="dek">Britain and the world at every sea level, from the depth of the last Ice Age, when you could walk from Yorkshire to Denmark, to a world with no ice left at all. Move the sea and watch the map, the land and the numbers change.</p>
+</header>
+<div class="byline">Dr Tristan Hotham, Independent researcher · October 2026 · Elevation: AWS Terrain Tiles (Mapzen, ETOPO1, GMTED2010, SRTM, EU-DEM and others); Natural Earth; GeoNames; OS Open Names; ONS</div>
+
+<div class="stats">
+  <div><b class="d">{{doggerland.max_km2|kk}} km²</b><span> of the southern North Sea floor is dry land in the model at the Ice Age low</span></div>
+  <div><b class="s">{{island.gb_continent|signed}} m</b><span>the sea level at which Britain's last land link to the continent goes under, using today's seabed</span></div>
+  <div><b class="h">{{at.p7.uk_towns|int}}</b><span>UK towns and cities whose centre point is under a +7 m sea, the height of Greenland's ice</span></div>
+  <div><b class="h">{{at.p70.uk_lost_share|pct}}</b><span>of the UK's land under water at +70 m, if all the ice on Earth melted</span></div>
+</div>
+
+<p class="lede">The coast is not a fixed line. Twenty thousand years ago, at the height of the last Ice Age, so much water was locked up in ice sheets that the sea stood about 120 m lower than today. The southern North Sea was a country of hills, rivers and marshes that archaeologists call Doggerland, and Britain was the far corner of Europe. If the ice that is left melted, the sea would rise by tens of metres and draw a new coast through London, the Fens and half the world's great cities.</p>
+<p>This page is a simple instrument for thinking about that. It takes a global model of the height of the land and the depth of the sea, sets the water to any level you choose, and floods every place below that level that the sea can reach. It is what geographers call a bathtub model: crude, honest about being crude, and good for seeing the shape of things. It is not a flood map, and it cannot tell you about your street.</p>
+
+<h2><span class="n">01 · The instrument</span>Set the sea</h2>
+<p>Drag the slider, press play, or jump to a moment. The map redraws as you go, and so do the numbers under it. Switch between the whole world and Britain with the North Sea, and zoom in for sharper terrain where your browser can fetch it.</p>
+</div>
+
+<div class="wrap"><div class="bleed">
+<section class="inst" aria-label="Sea level instrument">
+  <div class="inst-top">
+    <div class="level zero" id="lvl" aria-live="polite">0<small> m</small></div>
+    <div class="ctx" id="ctx"></div>
+    <button class="playb" id="play" aria-label="Play from the Ice Age to all ice melted">▶ Play</button>
+  </div>
+  <div class="slidewrap">
+    <label class="sr" for="slider">Sea level relative to today, metres</label>
+    <input type="range" id="slider" min="0" max="1" step="1" value="0">
+    <div class="ticks" id="ticks"></div>
+  </div>
+  <div class="marks" id="marks"></div>
+  <div class="mapbar">
+    <div class="seg" role="group" aria-label="View">
+      <button class="btn" data-view="uk" aria-pressed="true">Britain and the North Sea</button>
+      <button class="btn" data-view="world" aria-pressed="false">The world</button>
+    </div>
+    <label class="chk"><input type="checkbox" id="coast" checked> today's coast</label>
+    <label class="chk"><input type="checkbox" id="dots" checked> places under water</label>
+    <label class="chk"><input type="checkbox" id="live" checked> sharper terrain when zoomed in</label>
+  </div>
+  <div class="mapwrap"><div id="map" role="img" aria-label="Map of land and sea at the chosen sea level"></div><canvas id="overlay"></canvas><div class="loading" id="loading">Loading the elevation model…</div></div>
+  <div class="key">
+    <span><i style="background:#C9D3AE"></i>land today</span>
+    <span><i style="background:#E07A5C"></i>land drowned</span>
+    <span><i style="background:#9B7BC0"></i>land already below today's sea level, drowned</span>
+    <span><i style="background:#E8D49C"></i>sea floor exposed</span>
+    <span><i style="background:#8CC3C4"></i>shallow sea</span>
+    <span><i style="background:#2C5F82"></i>deep sea</span>
+  </div>
+  <div class="readout" id="readout"></div>
+  <div class="bridges" id="bridges"></div>
+</section>
+<p class="src">Map: my bathtub model on AWS Terrain Tiles (zoom 4 for the world, about 10 km cells at the equator; zoom 7 for Britain and the North Sea, about 700 m). Zoomed in, the page fetches finer tiles from the same source and checks them against the coarse model; if it cannot, it shows the coarse cells. Antarctica is drawn as it is today. Coast: Natural Earth 1:10m. Numbers: worldwide figures leave out Antarctica; UK figures use a 190 m grid.</p>
+</div></div>
+
+<div class="wrap">
+<div class="note warn">
+<h3>A bathtub, not a forecast</h3>
+<p>The model raises or lowers a flat sea and floods whatever is lower and joined to the ocean. Real coasts have sea walls, tides, storms, rivers, sinking and rising land, and an ocean whose surface is not flat. The elevation is coarse: about 10 km for the world, 700 m around Britain on the map and 190 m for the UK numbers, with errors of metres. Results for one town are indicative only, and nothing here tells you whether a particular house will flood. For that, use your national flood maps (in England, <a href="https://www.gov.uk/check-long-term-flood-risk">Check your long term flood risk</a>).</p>
+</div>
+
+<h2><span class="n">02 · Down</span>When Britain was not an island</h2>
+<p>Drop the sea to the Ice Age low and the map fills with sand colour: the floor of today's shallow seas, dry. Worldwide, outside Antarctica, the model exposes {{at.m125.world_gained|mkm}} million km² of sea floor at {{levels.5|signed}} m, an area {{gain_vs_land|pct}} the size of today's land. Among the gains are the great continental shelves: the plain between Siberia and Alaska, the shelf joining Borneo, Sumatra and Java to Asia, and the one joining New Guinea to Australia.</p>
+<p>Around Britain, the whole of the southern North Sea comes up. In my box from {{doggerland.box.lat0|raw}}° to {{doggerland.box.lat1|raw}}° N and {{doggerland.box.lon0_abs|raw}}° W to {{doggerland.box.lon1|raw}}° E, the model has {{doggerland.max_km2|int}} km² of dry land at the Ice Age low, almost all of the box. At {{at.m40.level|signed}} m it still has {{at.m40.dogger|int}} km², and at {{at.m20.level|signed}} m only {{at.m20.dogger|int}} km², mostly in strips along today's coasts. The Dogger Bank, the high ground in the middle, goes under in the model at {{dogger_bank.sea_from_m|signed}} m; Wikipedia says it remained an island until at least 5000 BCE.</p>
+
+<div class="figure">
+  <div class="fig-h">Doggerland, the drowned land of the southern North Sea</div>
+  <div class="fig-sub">Dry land in the box {{doggerland.box.lat0|raw}}° to {{doggerland.box.lat1|raw}}° N, {{doggerland.box.lon0_abs|raw}}° W to {{doggerland.box.lon1|raw}}° E, at each sea level below today's. Click to set the sea.</div>
+  <div class="chart" id="chDog"></div>
+</div>
+
+<p>The moment that matters for British history is when the last land link to the continent goes under. Using today's seabed, that happens in the model when the sea reaches <b>{{island.gb_continent|signed}} m</b> (on the coarse world grid, {{island.gb_continent_z4|signed}} m). Ireland parts from Britain earlier, at {{island.ie_gb|signed}} m. Wikipedia's account of Doggerland says it was inundated between 10,000 and 7,000 years ago, and that the tsunami from the Storegga underwater landslide off Norway, about 8,200 years ago, may have flooded much of what was left. I do not turn my levels into dates. Today's seabed is not the seabed of 8,000 years ago: rivers, tides and storms have moved sediment since, and the land itself has risen in the north of Britain and sunk in the south since the ice melted. The order of events is the robust part; the exact metres are not.</p>
+<div class="pull">In the model, the last land link from Britain to the continent goes under at {{island.gb_continent|signed}} m.</div>
+<p>The same calculation for other famous land bridges, all on the coarse world grid and today's seabed, is under the map: light up a chip and the sea drops to that level.</p>
+
+<h2><span class="n">03 · Up</span>What a rising sea takes</h2>
+<p>Now raise the sea. The first metre matters most to people alive today. The Intergovernmental Panel on Climate Change's Sixth Assessment Report (AR6) gives likely ranges for global sea level in 2100, relative to 1995 to 2014, of 0.28 to 0.55 m under very low emissions and 0.63 to 1.01 m under very high emissions. Those are the slider's thin coral band. Over the next 2,000 years it expects about 2 to 3 m if warming is limited to 1.5 °C, 2 to 6 m at 2 °C and 19 to 22 m with 5 °C of warming.</p>
+<p>A bathtub model is at its weakest exactly there. The world grid only resolves whole metres and 10 km cells, so at +1 m it mostly measures how many cells sit right on the shore. Around Britain, at +1 m the model drowns {{at.p1.uk_lost|int}} km² of land that it puts above today's sea level, plus {{at.p1.uk_lost_b0|int}} km² that it already puts below sea level (land kept dry today by banks, pumps and sea walls, which the model does not have). Real flood risk in 2100 will be set by storms and defences far more than by this arithmetic.</p>
+<p>Higher up, the shapes become clear. At +7 m, about what the Greenland ice sheet would add if it all melted, the model drowns {{at.p7.uk_lost|int}} km² of the UK ({{at.p7.uk_lost_share|pct1}} of its land), puts the centre points of {{at.p7.uk_towns|int}} towns and cities under water, and reaches neighbourhoods home to {{at.p7.msoa_pop|int}} people in England and Wales ({{at.p7.msoa_pop_share|pct1}}). Worldwide, {{at.p7.cities_n|int}} cities of more than 15,000 people have their centre below the line, home to {{at.p7.cities_pop|mn}} million.</p>
+<p>At +70 m, about what you get if every ice sheet and glacier melted, {{at.p70.uk_lost_share|pct}} of the UK's land is gone and {{at.p70.msoa_pop_share|pct}} of the people of England and Wales live in neighbourhoods whose centre is under water. The world loses {{at.p70.world_lost|mkm}} million km² ({{at.p70.world_lost_share|pct1}} of its land outside Antarctica) and {{at.p70.cities_n|int}} cities with {{at.p70.cities_pop|bn}} billion people. The Netherlands loses {{nld.p70|pct}} of its land in the finer grid, and among large countries Denmark and Bangladesh lose about nine tenths. That would take many centuries to millennia, but it is the size of what the ice holds.</p>
+
+<div class="grid2 figure">
+  <div>
+    <div class="fig-h">Land gained and lost, worldwide</div>
+    <div class="fig-sub">Million km² compared with today, outside Antarctica. Coral: drowned; violet: already below sea level.</div>
+    <div class="chart" id="chWorld"></div>
+  </div>
+  <div>
+    <div class="fig-h">The UK under a rising sea</div>
+    <div class="fig-sub">Share of UK land drowned, and share of people in England and Wales whose neighbourhood centre is under water.</div>
+    <div class="chart" id="chUK"></div>
+  </div>
+</div>
+
+<h2><span class="n">04 · Who loses most</span>Countries and cities at <span id="lvlh2">+7 m</span></h2>
+<p>These tables follow the slider. Countries are ranked by land drowned (model height at or above today's sea level), first by area and then as a share of the country, among countries with at least 20,000 km² of land in the grid. Cities are GeoNames places of more than 15,000 people; their heights are GeoNames' own point heights, which are rough, and a city counts once the modelled sea comes within one grid cell of it.</p>
+<div class="grid2">
+  <div><div class="fig-h">Most land drowned</div><div class="tablewrap" id="tCountries"></div></div>
+  <div><div class="fig-h">Largest cities below the line</div><div class="tablewrap" id="tCities"></div></div>
+</div>
+
+<h2><span class="n">05 · Britain</span>Find a place</h2>
+<p>Search for a British town or city (OS Open Names, {{uk_towns.n|int}} places) or any city in the world over 15,000 people (GeoNames). You will see the height the data give for its centre point and the level at which the modelled sea first reaches it. A town is a place, not a point: its centre may stay dry while its harbour floods, or the other way round.</p>
+<section class="finder" aria-label="Find a place">
+  <div class="searchbox"><input type="search" id="q" placeholder="Hull, Norwich, Glasgow, Lagos…" autocomplete="off" aria-label="Search for a place" role="combobox" aria-expanded="false" aria-controls="sug"><ul class="suggest" id="sug" role="listbox"></ul></div>
+  <div id="answer"><div class="pn">Try a coastal town, or a city on a big river.</div></div>
+</section>
+<div class="figure">
+  <div class="fig-h">UK towns and cities below the line at <span class="lvlname">+7 m</span></div>
+  <div class="fig-sub">OS Open Names cities and towns whose centre point is under the modelled sea, lowest first. Click a row to see it on the map.</div>
+  <div class="tablewrap" id="tTowns"></div>
+</div>
+
+<h2><span class="n">06 · Method</span>How the bathtub works</h2>
+<p><b>Elevation.</b> AWS Terrain Tiles combine several open elevation and bathymetry datasets into one global model of land height and sea depth in metres. I used the zoom-4 tiles for the world (4,096 by 4,096 web-mercator cells, about 9.8 km wide at the equator and 6 km at 52° N), the zoom-7 tiles for Britain, Ireland and the North Sea (about 700 m), and a zoom-10 extract for Britain and Ireland, averaged to about 190 m, for the UK numbers.</p>
+<p><b>Today's coast.</b> Level 0 is today's coast from Natural Earth's 1:10m land, not from the elevation model, so the map at 0 m looks like the world. At or below 0 m, today's land stays land; at or above 0 m, today's sea stays sea. The Caspian Sea is treated as a lake, apart from the ocean.</p>
+<p><b>Flooding.</b> For each of {{meta.levels_n|int}} levels from {{levels.0|signed}} m to +70 m (1 m apart, and 0.25 m apart between −2 and +3 m), a cell is sea if it is below the level and joined to the ocean through other cells below the level (cells touching at edges or corners). A falling sea leaves enclosed basins as water. Land that is already below sea level today floods at the first rise if the ocean can reach it, because the model has no sea walls; I count it separately.</p>
+<p><b>Places.</b> A place is under water when its point height is below the level and the modelled sea at that level reaches within one grid cell (about 10 km for the world, about 700 m around Britain on the coarse grid, about 190 m for UK places). Point heights: GeoNames' own height for world cities; the zoom-10 elevation for UK places. People in England and Wales are counted by Census 2021 Middle Layer Super Output Areas (neighbourhoods of about 8,000 people) whose population-weighted centre is under water. Scotland and Northern Ireland are in the town counts and land areas but not in the population figure.</p>
+<p><b>Land bridges.</b> For each pair of places I find the highest sea level at which they are joined by land (cells touching at edges) on today's seabed.</p>
+<details><summary>Caveats in full</summary>
+<p>No tides, storms, waves, defences, rivers or groundwater. No change in the shape of the land: since the Ice Age the ground has risen where the ice was thick (Scotland) and sagged around it, and melting ice today would change the Earth's gravity and crust so that the sea would not rise evenly. No erosion or sediment: the seabed of 8,000 years ago was not today's. The elevation model mixes sources of different ages and accuracy, sea-floor depths are interpolated in many places, coarse cells average land and sea at the coast, and lakes are mostly recorded at their surface. The world grid has whole-metre heights, so its numbers move in steps. Worldwide figures leave out Antarctica, whose land surface is mostly the ice sheet itself. GeoNames point heights are averages over 90 m or 900 m cells. All of this makes the model good for broad shapes and comparisons and poor for any single place.</p>
+</details>
+
+<h2><span class="n">07 · Sources</span>Data and licences</h2>
+<ul>
+<li>Elevation and bathymetry: AWS Terrain Tiles (Mapzen and Tilezen terrarium format), https://registry.opendata.aws/terrain-tiles/. Sources as required by its attribution: ETOPO1 (NOAA), GMTED2010 (USGS), SRTM (NASA), EU-DEM (Copernicus, produced using Copernicus data and information funded by the European Union), Canadian Digital Elevation Data, NED (USGS), Great Lakes bathymetry (NOAA), Arctic DEM (Polar Geospatial Center), LINZ (New Zealand), data.gov.uk (Environment Agency LIDAR, Open Government Licence), and others listed at https://github.com/tilezen/joerd/blob/master/docs/attribution.md.</li>
+<li>Coast, land and country outlines: Natural Earth 1:10m (public domain).</li>
+<li>World cities: GeoNames cities15000 (CC BY 4.0), https://www.geonames.org.</li>
+<li>UK places: OS Open Names, contains OS data © Crown copyright and database right 2026 (Open Government Licence v3.0).</li>
+<li>Census 2021 TS001, MSOA population-weighted centroids, 2022 built-up areas: Office for National Statistics (Open Government Licence v3.0).</li>
+<li>Sea-level history and projections: IPCC AR6 Working Group I (2021) and Synthesis Report (2023), as quoted on the Hong Kong Observatory and IPCC pages; English Wikipedia, "Doggerland", "Last Glacial Maximum" and "Greenland ice sheet" (CC BY-SA 4.0); Antarctic ice volume from BedMachine Antarctica (Morlighem et al. 2020) as given by AntarcticGlaciers.org.</li>
+<li>Map library Leaflet 1.9.4; live tiles fetched from the public AWS bucket where the browser allows.</li>
+</ul>
+<div class="cta"><a class="p" href="https://doi.org/10.5281/zenodo.23732578">Read the paper</a><a href="https://github.com/Tristan-Hotham/sea-level">Data and code</a><a href="https://blog.tristanhotham.com/">All posts</a></div>
+
+<footer>
+  <p>Dr Tristan Hotham, Independent researcher. ORCID 0000-0003-4931-9349. Cite as: Hotham, T. (2026) Drowned and rising: Britain and the world at every sea level. https://doi.org/10.5281/zenodo.23732578</p>
+  <p>I wrote the text, with drafting and editing assistance from Claude (Anthropic), which also helped prepare the analysis code. I reviewed and checked all text and results.</p>
+  <p>Elevation: AWS Terrain Tiles (Mapzen; ETOPO1, GMTED2010, SRTM, EU-DEM and others). Natural Earth (public domain). GeoNames (CC BY 4.0). Contains OS data © Crown copyright and database right 2026, and ONS data (Open Government Licence v3.0). Text and figures: CC BY 4.0. Code: MIT. Other studies: <a href="https://tristan-hotham.github.io/pleasant-months/">Pleasant months</a>, <a href="https://tristan-hotham.github.io/within-sight/">Within sight</a>, <a href="https://blog.tristanhotham.com/">all posts</a>.</p>
+</footer>
+</div>
+<div class="tip" id="tip"></div>
+<button class="btn theme" id="theme" aria-label="Toggle dark mode">◐</button>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const R = /*RESULTS*/;
+const G = /*GRIDS*/;
+const NS = "http://www.w3.org/2000/svg";
+const el = (t, a = {}, p) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); if (p) p.appendChild(e); return e; };
+const fmt = n => n == null ? "n/a" : Math.round(n).toLocaleString("en-GB");
+const pc = (x, d = 0) => (x * 100).toFixed(d) + "%";
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const sgn = v => (v > 0 ? "+" : v < 0 ? "−" : "") + (Math.abs(v) % 1 ? Math.abs(v).toFixed(2).replace(/0$/, "") : Math.abs(v));
+const big = v => v >= 1e9 ? (v / 1e9).toFixed(2) + " billion" : v >= 1e6 ? (v / 1e6).toFixed(1) + " million" : fmt(v);
+const tip = document.getElementById("tip");
+function showTip(h, x, y) { tip.innerHTML = h; tip.style.display = "block"; const w = tip.offsetWidth; x = Math.max(w / 2 + 8, Math.min(innerWidth - w / 2 - 8, x)); tip.style.left = x + scrollX + "px"; tip.style.top = y + scrollY + "px"; }
+function hideTip() { tip.style.display = "none"; }
+const redraws = [];
+function resp(box, render) { let last = 0; const go = (force) => { const w = Math.max(280, Math.round(box.clientWidth)); if (!force && Math.abs(w - last) < 4) return; last = w; box.innerHTML = ""; render(w, w < 560); }; new ResizeObserver(() => go()).observe(box); go(); redraws.push(() => go(true)); }
+const lbl = (svg, x, y, s, cls = "lab", anchor = "start") => { const t = el("text", { x, y, class: cls, "text-anchor": anchor }, svg); t.textContent = s; return t; };
+const isDark = () => { const r = document.documentElement; return r.dataset.theme ? r.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; };
+document.getElementById("theme").onclick = () => { const r = document.documentElement; r.dataset.theme = isDark() ? "light" : "dark"; redraws.forEach(f => f()); };
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+/* ---------------- levels ---------------- */
+const LV = R.levels, K = LV.length, K0 = R.k0, I0 = K0 - 1;
+const POS0 = K0;  // index of the first positive level; per-level arrays for positive levels start here
+let li = I0;      // current level index
+const lvl = () => LV[li];
+const kL = () => li + 1;  // a cell is sea when its code <= kL
+const idxOf = v => { let b = 0; for (let i = 0; i < K; i++) if (Math.abs(LV[i] - v) < Math.abs(LV[b] - v)) b = i; return b; };
+const listeners = [];
+function setLevel(i, src) { li = Math.max(0, Math.min(K - 1, i)); if (src !== "slider") slider.value = li; listeners.forEach(f => f()); }
+
+/* ---------------- colours (the map keeps one palette in both themes) ---------------- */
+const hex = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+const ramp = stops => v => { if (v <= stops[0][0]) return hex(stops[0][1]); for (let i = 1; i < stops.length; i++) if (v <= stops[i][0]) { const [a, ca] = stops[i - 1], [b, cb] = stops[i]; const f = (v - a) / (b - a), A = hex(ca), B = hex(cb); return [0, 1, 2].map(j => A[j] + (B[j] - A[j]) * f); } return hex(stops[stops.length - 1][1]); };
+const LAND = ramp([[0, "#D3DBBA"], [40, "#C6D1A8"], [150, "#CFC9A0"], [500, "#C2AC84"], [1500, "#A88F72"], [3000, "#C9C1B8"], [5500, "#F4F2EE"]]);
+const SEA = ramp([[0, "#A9D8D3"], [20, "#8CC3C4"], [80, "#6AA8B6"], [300, "#4A86A3"], [1500, "#2C5F82"], [5000, "#1D4766"]]);
+const DROWN = ramp([[0, "#EE9B7E"], [10, "#E07A5C"], [40, "#C8573C"], [70, "#A9452F"]]);
+const BELOW = hex("#9B7BC0");
+const EXPOSE = ramp([[0, "#EFE0AE"], [20, "#E8D49C"], [60, "#DCC07E"], [130, "#C9A962"]]);
+const LAKE = hex("#9CC9D6");
+const CLS_H = [-5000, -3000, -1500, -600, -165, 35, 110, 225, 450, 800, 1250, 2000, 3200, 5000];
+// approximate height of a bundled cell from its drowning code and height class
+const cellH = (c, cls) => (c >= 2 && c <= K) ? LV[c - 1] - (c - 2 >= 0 ? (LV[c - 1] - LV[c - 2]) / 2 : 0.5) : CLS_H[cls];
+let LUT = new Uint8ClampedArray(256 * 16 * 8 * 3);
+function buildLUT() {
+  const k = kL(), lev = lvl();
+  for (let c = 0; c < 256; c++) for (let cls = 0; cls < 16; cls++) {
+    const h = cellH(c, Math.min(cls, 13)), water = c <= k, today = c > K0;
+    let rgb, land;
+    if (water && today) { rgb = (c === K0 + 1) ? BELOW : DROWN(lev - h); land = false; }
+    else if (water) { rgb = SEA(lev - h); land = false; }
+    else if (!today) { rgb = EXPOSE(h - lev); land = true; }
+    else { rgb = LAND(Math.max(0, h)); land = true; }
+    for (let s = 0; s < 8; s++) {
+      const m = land ? 0.74 + s * 0.048 : 0.93 + s * 0.012;
+      const o = ((c * 16 + cls) * 8 + s) * 3;
+      LUT[o] = rgb[0] * m; LUT[o + 1] = rgb[1] * m; LUT[o + 2] = rgb[2] * m;
+    }
+  }
+}
+
+/* ---------------- bundled grids ---------------- */
+const SRC = {};
+async function gray(url, w, h) {
+  const img = new Image(); img.src = url; await img.decode();
+  const out = new Uint8Array(w * h), band = Math.min(h, 1024);
+  const cv = document.createElement("canvas"); cv.width = w; cv.height = band;
+  const cx = cv.getContext("2d", { willReadFrequently: true });
+  for (let y0 = 0; y0 < h; y0 += band) {
+    const bh = Math.min(band, h - y0); cx.clearRect(0, 0, w, band); cx.drawImage(img, 0, y0, w, bh, 0, 0, w, bh);
+    const d = cx.getImageData(0, 0, w, bh).data; for (let i = 0, j = y0 * w; i < w * bh; i++, j++) out[j] = d[i * 4];
+  }
+  return out;
+}
+async function loadSrc(name) {
+  const g = G[name];
+  const [code, rel] = await Promise.all([gray(`data/${name}_code.png`, g.w, g.h), gray(`data/${name}_relief.png`, Math.floor(g.w / g.rf), Math.floor(g.h / g.rf))]);
+  SRC[name] = Object.assign({ code, rel, rw: Math.floor(g.w / g.rf), rh: Math.floor(g.h / g.rf) }, g);
+}
+// sample the best bundled grid at global pixel (gx, gy) of zoom z; returns [code, relief, isEurope]
+function sample(gx, gy, z) {
+  const e = SRC.europe;
+  if (e && z >= 5) {
+    const s = 2 ** (e.z - z), x = Math.floor(gx * s) - e.x0, y = Math.floor(gy * s) - e.y0;
+    if (x >= 0 && y >= 0 && x < e.w && y < e.h) return [e.code[y * e.w + x], e.rel[Math.min(e.rh - 1, (y / e.rf) | 0) * e.rw + Math.min(e.rw - 1, (x / e.rf) | 0)], 1, x, y];
+  }
+  const w = SRC.world, s = 2 ** (w.z - z);
+  let x = Math.floor(gx * s) % w.w; if (x < 0) x += w.w; const y = Math.max(0, Math.min(w.h - 1, Math.floor(gy * s)));
+  return [w.code[y * w.w + x], w.rel[((y / w.rf) | 0) * w.rw + ((x / w.rf) | 0)], 0, x, y];
+}
+function nbMin(isEu, x, y) {
+  const g = isEu ? SRC.europe : SRC.world; let m = 255;
+  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+    let xx = x + dx, yy = y + dy; if (isEu) { if (xx < 0 || yy < 0 || xx >= g.w || yy >= g.h) continue; } else { xx = (xx + g.w) % g.w; yy = Math.max(0, Math.min(g.h - 1, yy)); }
+    const c = g.code[yy * g.w + xx]; if (c < m) m = c;
+  }
+  return m;
+}
+
+/* ---------------- the map ---------------- */
+const map = L.map("map", { zoomControl: true, minZoom: 1, maxZoom: 12, worldCopyJump: true, preferCanvas: true, attributionControl: true });
+map.attributionControl.setPrefix('<a href="https://leafletjs.com">Leaflet</a>');
+const VIEWS = { uk: [[48.3, -11.5], [61.3, 10.2]], world: [[-58, -170], [75, 175]] };
+const tiles = new Map();
+let useLive = true;
+const liveOK = { ok: true };
+const Bath = L.GridLayer.extend({
+  createTile(coords, done) {
+    const c = document.createElement("canvas"); c.width = c.height = 256;
+    const t = { c, coords, ctx: c.getContext("2d"), img: null, live: null };
+    tiles.set(this._tileCoordsToKey(coords), t);
+    prepTile(t).then(() => { paint(t); done(null, c); });
+    return c;
+  }
+});
+function prepTile(t) {
+  const { x, y, z } = t.coords, n = 2 ** z;
+  const xw = ((x % n) + n) % n;
+  t.code = new Uint8Array(65536); t.rel = new Uint8Array(65536); t.eu = new Uint8Array(65536);
+  for (let j = 0; j < 256; j++) for (let i = 0; i < 256; i++) {
+    const r = sample(xw * 256 + i + 0.5, y * 256 + j + 0.5, z), o = j * 256 + i;
+    t.code[o] = r[0]; t.rel[o] = r[1]; t.eu[o] = r[2];
+  }
+  t.img = t.ctx.createImageData(256, 256);
+  const wantLive = useLive && liveOK.ok && ((z >= 8) || (z >= 6 && !t.eu[32896]));
+  if (!wantLive) return Promise.resolve();
+  return new Promise(res => {
+    const im = new Image(); im.crossOrigin = "anonymous";
+    im.onload = () => {
+      try {
+        const cv = document.createElement("canvas"); cv.width = cv.height = 256; const cx = cv.getContext("2d", { willReadFrequently: true });
+        cx.drawImage(im, 0, 0); const d = cx.getImageData(0, 0, 256, 256).data;
+        const e = new Float32Array(65536); for (let o = 0; o < 65536; o++) e[o] = d[o * 4] * 256 + d[o * 4 + 1] + d[o * 4 + 2] / 256 - 32768;
+        const nb = new Uint8Array(65536), sh = new Uint8Array(65536);
+        const res_m = 40075016.7 / (256 * n) * Math.cos(Math.atan(Math.sinh(Math.PI * (1 - 2 * (y + 0.5) / n))));
+        for (let j = 0; j < 256; j++) for (let i = 0; i < 256; i++) {
+          const o = j * 256 + i, r = sample(xw * 256 + i + 0.5, y * 256 + j + 0.5, z);
+          nb[o] = nbMin(r[2], r[3], r[4]);
+          const dx = (e[j * 256 + Math.min(255, i + 1)] - e[j * 256 + Math.max(0, i - 1)]) / (2 * res_m) * 2;
+          const dn = (e[Math.max(0, j - 1) * 256 + i] - e[Math.min(255, j + 1) * 256 + i]) / (2 * res_m) * 2;
+          const hs = (dx * 0.5 - dn * 0.5 + 0.7071) / Math.sqrt(1 + dx * dx + dn * dn);
+          sh[o] = Math.max(0, Math.min(7, Math.round(hs * 7)));
+        }
+        t.live = { e, nb, sh };
+      } catch (err) { liveOK.ok = false; }
+      res();
+    };
+    im.onerror = () => res();
+    im.src = `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${z}/${xw}/${y}.png`;
+  });
+}
+function paint(t) {
+  const d = t.img.data, code = t.code, rel = t.rel, k = kL(), lev = lvl();
+  if (t.live) {
+    const { e, nb, sh } = t.live, cache = new Map();
+    for (let o = 0; o < 65536; o++) {
+      const h = e[o], cc = code[o], eu = t.eu[o];
+      const todayLand = h >= 0 || (eu && cc > K0);
+      const water = lev <= 0 ? (h < lev && nb[o] <= k && !(eu && cc > K0)) : (h < lev && (nb[o] <= k || !todayLand));
+      let rgb, land;
+      if ((rel[o] & 128) && !(cc <= k)) { rgb = LAKE; land = false; }
+      else if (rel[o] & 128) { rgb = SEA(lev - h); land = false; }
+      else if (water && todayLand) { rgb = h < 0 ? BELOW : DROWN(lev - h); land = false; }
+      else if (water) { rgb = SEA(lev - h); land = false; }
+      else if (!todayLand) { rgb = EXPOSE(h - lev); land = true; }
+      else { rgb = LAND(h); land = true; }
+      const m = land ? 0.74 + sh[o] * 0.048 : 0.93 + sh[o] * 0.012, p = o * 4;
+      d[p] = rgb[0] * m; d[p + 1] = rgb[1] * m; d[p + 2] = rgb[2] * m; d[p + 3] = 255;
+    }
+  } else {
+    for (let o = 0; o < 65536; o++) {
+      const c = code[o], r = rel[o], p = o * 4;
+      if ((r & 128) && c > k) { d[p] = LAKE[0]; d[p + 1] = LAKE[1]; d[p + 2] = LAKE[2]; d[p + 3] = 255; continue; }
+      if (r & 128) { const sc = SEA(lev - cellH(c, r & 15)); d[p] = sc[0]; d[p + 1] = sc[1]; d[p + 2] = sc[2]; d[p + 3] = 255; continue; }
+      const q = ((c * 16 + (r & 15)) * 8 + ((r >> 4) & 7)) * 3;
+      d[p] = LUT[q]; d[p + 1] = LUT[q + 1]; d[p + 2] = LUT[q + 2]; d[p + 3] = 255;
+    }
+  }
+  t.ctx.putImageData(t.img, 0, 0);
+}
+const bath = new Bath({ tileSize: 256, updateWhenZooming: false, keepBuffer: 1, noWrap: false,
+  attribution: 'Elevation: <a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md">AWS Terrain Tiles</a> (Mapzen; ETOPO1, GMTED2010, SRTM, EU-DEM and others) · Coast: Natural Earth · Model: T. Hotham' });
+bath.on("tileunload", e => { tiles.delete(bath._tileCoordsToKey(e.coords)); });
+let raf = 0;
+function repaintAll() { if (raf) return; raf = requestAnimationFrame(() => { raf = 0; buildLUT(); tiles.forEach(t => { if (t.img) paint(t); }); drawOverlay(); }); }
+
+/* overlay: today's coast, Doggerland box, places under water */
+const ov = document.getElementById("overlay"), ox = ov.getContext("2d");
+let COAST = null, CITIES = null, TOWNS = null, dotsDrawn = [];
+function sizeOverlay() { const r = map.getContainer().getBoundingClientRect(), dpr = devicePixelRatio || 1; ov.width = r.width * dpr; ov.height = r.height * dpr; ov.style.width = r.width + "px"; ov.style.height = r.height + "px"; ox.setTransform(dpr, 0, 0, dpr, 0, 0); }
+function drawOverlay() {
+  const r = map.getContainer().getBoundingClientRect(); ox.clearRect(0, 0, r.width, r.height); dotsDrawn = [];
+  const z = map.getZoom(), b = map.getBounds().pad(0.05), lev = lvl();
+  if (document.getElementById("coast").checked && COAST && z < 8) {
+    ox.strokeStyle = "rgba(19,36,44,.55)"; ox.lineWidth = z >= 6 ? 1 : 0.7; ox.beginPath();
+    const cw = map.getCenter().lng;
+    for (const ln of COAST) {
+      let started = false, prev = null;
+      for (const [lo, la] of ln) {
+        if (la < b.getSouth() - 2 || la > b.getNorth() + 2) { started = false; continue; }
+        let lon = lo; while (lon - cw > 180) lon -= 360; while (lon - cw < -180) lon += 360;
+        const p = map.latLngToContainerPoint([la, lon]);
+        if (started && prev !== null && Math.abs(lon - prev) < 90) ox.lineTo(p.x, p.y); else ox.moveTo(p.x, p.y);
+        started = true; prev = lon;
+      }
+    }
+    ox.stroke();
+  }
+  if (view === "uk" || z >= 5) {
+    const db = R.doggerland.box, a = map.latLngToContainerPoint([db.lat1, db.lon0]), c = map.latLngToContainerPoint([db.lat0, db.lon1]);
+    ox.setLineDash([5, 4]); ox.strokeStyle = "rgba(19,36,44,.6)"; ox.lineWidth = 1; ox.strokeRect(a.x, a.y, c.x - a.x, c.y - a.y); ox.setLineDash([]);
+    ox.font = "500 11px 'IBM Plex Mono', monospace"; ox.fillStyle = "rgba(19,36,44,.8)"; ox.fillText("Doggerland box", a.x + 4, a.y + 13);
+  }
+  if (!document.getElementById("dots").checked || lev <= 0) return;
+  const minPop = z <= 2 ? 1e6 : z <= 3 ? 4e5 : z <= 4 ? 1.5e5 : z <= 6 ? 5e4 : 0;
+  const pts = [];
+  if (CITIES) for (const c of CITIES.rows) { if (c[5] > lev + 1e-9 || c[4] < minPop) continue; if (c[1] === "GB" && TOWNS && z >= 5) continue; pts.push([c[2], c[3], c[4], c[0], c[1], c[5], c[6], "c"]); }
+  if (TOWNS && z >= 5) for (const t of TOWNS.rows) { if (t[5] > lev + 1e-9) continue; pts.push([t[2], t[3], t[6] || 20000, t[0], t[1], t[5], t[4], "t"]); }
+  pts.sort((p, q) => q[2] - p[2]);
+  for (const p of pts) {
+    if (!b.contains([p[0], p[1]])) continue;
+    const q = map.latLngToContainerPoint([p[0], p[1]]), rad = Math.max(2.4, Math.min(11, Math.sqrt(p[2]) / 260 * (z >= 6 ? 1.6 : 1)));
+    ox.beginPath(); ox.arc(q.x, q.y, rad, 0, 7); ox.fillStyle = "rgba(200,73,47,.92)"; ox.fill(); ox.lineWidth = 1; ox.strokeStyle = "#fff"; ox.stroke();
+    dotsDrawn.push([q.x, q.y, rad, p]);
+  }
+}
+map.on("move zoom resize", () => { drawOverlay(); });
+map.on("resize", sizeOverlay);
+const mapEl = document.getElementById("map");
+mapEl.addEventListener("mousemove", e => {
+  const r = mapEl.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+  let best = null, bd = 12;
+  for (const d of dotsDrawn) { const dd = Math.hypot(d[0] - x, d[1] - y) - d[2]; if (dd < bd) { bd = dd; best = d; } }
+  if (best) { const p = best[3]; showTip(`<b>${esc(p[3])}</b>, ${esc(p[4])}<br>${p[7] === "c" ? "about " + fmt(p[2]) + " people<br>" : ""}centre height about ${fmt(p[6])} m<br>sea reaches it at about +${p[5]} m in the model`, e.clientX, e.clientY - 4); }
+  else hideTip();
+});
+mapEl.addEventListener("mouseleave", hideTip);
+
+/* place popups (search, table rows, dots) */
+function placePopup(name, area, lat, lon, height, fl, kind) {
+  const reach = fl >= 900 ? "The modelled sea does not reach it even at +70 m." : `In the model the sea first reaches within ${kind === "t" ? "about 200 m" : "one grid cell"} of this point at <b>about +${fl} m</b>.`;
+  L.popup().setLatLng([lat, lon]).setContent(`<div class="pop"><b class="t">${esc(name)}</b><div class="c">${esc(area)}</div>Centre point height: about ${fmt(height)} m above today's sea level (${kind === "t" ? "zoom-10 terrain" : "GeoNames"}).<br>${reach}<span class="w">A coarse bathtub model: indicative only, not a flood risk assessment.</span></div>`).openOn(map);
+}
+
+/* ---------------- instrument UI ---------------- */
+const slider = document.getElementById("slider"); slider.max = K - 1; slider.value = I0;
+slider.addEventListener("input", () => { stopPlay(); setLevel(+slider.value, "slider"); });
+const MARKS = [
+  [-125, "Ice Age low", "Last Glacial Maximum, 26,000 to 20,000 years ago: sea about 120 to 125 m lower"],
+  [R.island.gb_continent, "Britain an island", "In the model, Britain's last land link to the continent goes under"],
+  [0, "Today", "Today's coast"],
+  [1, "2100, high emissions", "IPCC AR6 likely range for 2100 is 0.63 to 1.01 m under very high emissions (0.28 to 0.55 m very low)"],
+  [7, "Greenland's ice", "The Greenland ice sheet holds about 7.4 m of sea level"],
+  [58, "Antarctica's ice", "The Antarctic ice sheet holds about 58 m of sea level"],
+  [70, "All ice", "Greenland, Antarctica and the world's glaciers together: about 65 to 70 m"],
+];
+const marks = document.getElementById("marks");
+for (const [v, name] of MARKS) { const b = document.createElement("button"); b.className = "btn"; b.textContent = `${name} ${sgn(v)} m`; b.onclick = () => { stopPlay(); setLevel(idxOf(v)); }; marks.appendChild(b); }
+const ticks = document.getElementById("ticks");
+function placeTicks() {
+  ticks.innerHTML = "";
+  for (const [v, name, , opt] of [[-125, "Ice Age"], [R.island.gb_continent, "island"], [0, "today"], [7, "Greenland"], [70, "all ice"]]) {
+    const b = document.createElement("button"); b.innerHTML = `${sgn(v)}<br>${name}`; b.style.left = (idxOf(v) / (K - 1) * 100) + "%";
+    if (name === "island" || name === "Greenland") b.className = "opt";
+    if (v === 70) b.className = "last";
+    b.onclick = () => { stopPlay(); setLevel(idxOf(v)); }; ticks.appendChild(b);
+  }
+}
+placeTicks();
+(() => { const bd = document.createElement("div"); bd.className = "band"; bd.title = "IPCC AR6 likely range for 2100, 0.28 to 1.01 m";
+  const a = idxOf(0.28) / (K - 1), z = idxOf(1.01) / (K - 1);
+  bd.style.left = `calc(14px + 7px + (100% - 42px) * ${a})`; bd.style.width = `calc((100% - 42px) * ${z - a} + 2px)`;
+  document.querySelector(".slidewrap").appendChild(bd); })();
+function context(v) {
+  if (v <= -120) return ["The Ice Age low", "At the Last Glacial Maximum, 26,000 to 20,000 years ago, the sea stood about 120 to 125 m lower than today. Britain is the north-west corner of Europe."];
+  if (v < R.island.gb_continent) return ["Britain joined to Europe", "Doggerland links eastern England to the Netherlands, Germany and Denmark. Wikipedia: it was inundated between 10,000 and 7,000 years ago."];
+  if (v < 0) return ["Britain an island", `In the model Britain's last land link goes under at ${sgn(R.island.gb_continent)} m. The Storegga tsunami struck about 8,200 years ago.`];
+  if (v === 0) return ["Today", "Today's coast, from Natural Earth. Land already below sea level (polders, fens) is kept dry by defences the model does not have."];
+  if (v <= 1.01) return ["The 2100 range", "IPCC AR6, likely range for 2100: 0.28 to 0.55 m (very low emissions) to 0.63 to 1.01 m (very high). At this scale, the model is at its weakest."];
+  if (v <= 6) return ["Centuries ahead", "IPCC AR6: over 2,000 years, about 2 to 3 m if warming stays at 1.5 °C, 2 to 6 m at 2 °C."];
+  if (v < 19) return ["Greenland's ice", "The Greenland ice sheet holds about 7.4 m of global sea level."];
+  if (v <= 22) return ["A 5 °C world", "IPCC AR6: with 5 °C of warming, 19 to 22 m over the next 2,000 years."];
+  if (v < 58) return ["Into Antarctica's share", "The Antarctic ice sheet holds about 58 m. Nothing like this is projected for centuries; it is the scale of what the ice holds."];
+  return ["All the ice", "Greenland (about 7.4 m) plus Antarctica (about 58 m) plus mountain glaciers: about 65 to 70 m."];
+}
+const lvlEl = document.getElementById("lvl"), ctxEl = document.getElementById("ctx");
+function updateHead() {
+  const v = lvl();
+  lvlEl.innerHTML = `${sgn(v)}<small> m</small>`; lvlEl.className = "level " + (v > 0 ? "up" : v < 0 ? "down" : "zero");
+  const [a, b] = context(v); ctxEl.innerHTML = `<b>${a}</b>${b}`;
+  document.getElementById("lvlh2").textContent = (v > 0 ? sgn(v) : "+7") + " m";
+  document.querySelectorAll(".lvlname").forEach(e => e.textContent = (v > 0 ? sgn(v) : "+7") + " m");
+}
+listeners.push(updateHead, repaintAll);
+
+/* readout */
+const RO = document.getElementById("readout");
+function readout() {
+  const v = lvl(), i = li, p = i - POS0;
+  let h = "";
+  if (v < 0) {
+    const dg = R.doggerland.land[i], bridgesOn = R.bridges.filter(b => b.at != null && v <= b.at).length;
+    h += `<div><b>${(R.world.gained[i] / 1e6).toFixed(1)} million km²</b><span>of sea floor exposed worldwide, outside Antarctica: <em>${pc(R.world.gained[i] / R.world.land, 1)}</em> on top of today's land</span></div>`;
+    h += `<div><b>${fmt(dg)} km²</b><span>of dry land in the Doggerland box, <em>${pc(dg / R.doggerland.sea, 0)}</em> of it</span></div>`;
+    h += `<div><b>${v <= R.island.gb_continent ? "Joined" : "Island"}</b><span>Britain ${v <= R.island.gb_continent ? "is joined to the continent" : "is an island"} in the model; Ireland ${v <= R.island.ie_gb ? "is joined to Britain" : "is separate"}</span></div>`;
+    h += `<div><b>${fmt(R.europe.exposed[i])} km²</b><span>of sea floor exposed in the Britain and North Sea window</span></div>`;
+    h += `<div><b>${bridgesOn} of ${R.bridges.length}</b><span>famous land bridges dry in the model (below)</span></div>`;
+    h += `<div><b>${(R.world.land / 1e6 + R.world.gained[i] / 1e6).toFixed(1)} million km²</b><span>of land in all, against ${(R.world.land / 1e6).toFixed(1)} million today (outside Antarctica)</span></div>`;
+  } else if (v === 0) {
+    h += `<div><b>${(R.world.land / 1e6).toFixed(1)} million km²</b><span>of land outside Antarctica in the grid</span></div>`;
+    h += `<div><b>${fmt(R.uk.land)} km²</b><span>of UK land in the 190 m grid</span></div>`;
+    h += `<div><b>${fmt(R.uk.below0)} km²</b><span>of UK land the model puts below today's sea level</span></div>`;
+  } else {
+    const ul = R.uk.lost[p], ub = R.uk.lost_b0[p];
+    h += `<div><b>${fmt(ul)} km²</b><span>of UK land drowned, <em>${pc(ul / R.uk.land, 1)}</em>, plus ${fmt(ub)} km² already below sea level</span></div>`;
+    h += `<div><b>${fmt(R.uk_towns.under[p])}</b><span>UK towns and cities (of ${fmt(R.uk_towns.n)}) with the centre point under water</span></div>`;
+    h += `<div><b>${big(R.msoa.under_pop[p])}</b><span>people in England and Wales whose neighbourhood centre is under water, <em>${pc(R.msoa.under_pop[p] / R.msoa.pop_total, 1)}</em></span></div>`;
+    h += `<div><b>${(R.world.lost[i] / 1e6).toFixed(2)} million km²</b><span>of land drowned worldwide, <em>${pc(R.world.lost[i] / R.world.land, 1)}</em>, plus ${(R.world.lost_b0[i] / 1e6).toFixed(2)} million km² already below sea level</span></div>`;
+    h += `<div><b>${fmt(R.cities.under_n[p])}</b><span>cities over 15,000 people (of ${fmt(R.cities.n)}) with the centre below the line</span></div>`;
+    h += `<div><b>${big(R.cities.under_pop[p])}</b><span>people live in those cities (GeoNames populations)</span></div>`;
+  }
+  RO.innerHTML = h;
+}
+listeners.push(readout);
+
+/* land bridges */
+const BR = document.getElementById("bridges");
+function bridges() {
+  const v = lvl();
+  BR.innerHTML = `<div class="lab0">Land bridges on today's seabed: joined when the sea is at or below</div>` + R.bridges.map((b, j) => `<button class="chip${b.at != null && v <= b.at ? " on" : ""}" data-j="${j}"><b>${sgn(b.at)} m</b> ${esc(b.name)}</button>`).join("");
+  BR.querySelectorAll(".chip").forEach(c => c.onclick = () => { stopPlay(); const b = R.bridges[+c.dataset.j]; setLevel(idxOf(b.at)); });
+}
+listeners.push(bridges);
+
+/* play: Ice Age to all ice in about 14 seconds */
+let playing = 0;
+const playB = document.getElementById("play");
+function stopPlay() { if (playing) { cancelAnimationFrame(playing); playing = 0; playB.textContent = "▶ Play"; } }
+playB.onclick = () => {
+  if (playing) return stopPlay();
+  if (li >= K - 1) setLevel(0);
+  playB.textContent = "❚❚ Pause"; let last = performance.now(), acc = 0;
+  const step = now => { acc += (now - last) / 1000 * 16; last = now; while (acc >= 1) { acc -= 1; if (li < K - 1) setLevel(li + 1); } if (li >= K - 1) return stopPlay(); playing = requestAnimationFrame(step); };
+  playing = requestAnimationFrame(step);
+};
+
+/* views */
+let view = "uk";
+document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => {
+  view = b.dataset.view; document.querySelectorAll("[data-view]").forEach(x => x.setAttribute("aria-pressed", x === b));
+  map.fitBounds(VIEWS[view]);
+});
+["coast", "dots"].forEach(id => document.getElementById(id).onchange = drawOverlay);
+document.getElementById("live").onchange = e => { useLive = e.target.checked; bath.redraw(); };
+
+/* ---------------- charts ---------------- */
+function lineChart(box, series, opt) {
+  resp(box, (w, small) => {
+    const H = small ? 230 : 260, m = { l: 46, r: 12, t: 12, b: 32 }, svg = el("svg", { viewBox: `0 0 ${w} ${H}`, role: "img", "aria-label": opt.aria }, box);
+    const x = v => m.l + (v - opt.x0) / (opt.x1 - opt.x0) * (w - m.l - m.r), y = v => H - m.b - (v - opt.y0) / (opt.y1 - opt.y0) * (H - m.t - m.b);
+    for (const v of opt.yt) { el("line", { x1: m.l, x2: w - m.r, y1: y(v), y2: y(v), stroke: "var(--rule)" }, svg); lbl(svg, m.l - 6, y(v) + 4, opt.yf(v), "lab m", "end"); }
+    for (const v of opt.xt) lbl(svg, x(v), H - 10, sgn(v), "lab m", "middle");
+    if (opt.zero) el("line", { x1: x(0), x2: x(0), y1: m.t, y2: H - m.b, stroke: "var(--muted)", "stroke-dasharray": "2 3" }, svg);
+    for (const s of series) {
+      let d = ""; s.pts.forEach(([a, b], k) => { d += (k ? "L" : "M") + x(a).toFixed(1) + " " + y(b).toFixed(1); });
+      el("path", { d, fill: "none", stroke: s.col, "stroke-width": 2.4, "stroke-linejoin": "round" }, svg);
+      if (s.label) lbl(svg, x(s.pts[s.lx][0]) + 4, y(s.pts[s.lx][1]) - 6, s.label, "lab b").setAttribute("fill", s.col);
+    }
+    const cur = el("line", { y1: m.t, y2: H - m.b, stroke: "var(--hot)", "stroke-width": 1.5 }, svg);
+    const dots = series.map(s => el("circle", { r: 4, fill: s.col, stroke: "var(--card)", "stroke-width": 1.5 }, svg));
+    const upd = () => {
+      const v = Math.max(opt.x0, Math.min(opt.x1, lvl())); cur.setAttribute("x1", x(v)); cur.setAttribute("x2", x(v));
+      series.forEach((s, k) => { const pt = s.pts.reduce((a, b) => Math.abs(b[0] - v) < Math.abs(a[0] - v) ? b : a); dots[k].setAttribute("cx", x(pt[0])); dots[k].setAttribute("cy", y(pt[1])); dots[k].style.display = (lvl() < opt.x0 || lvl() > opt.x1) ? "none" : ""; });
+    };
+    upd(); box._upd = upd;
+    const hit = el("rect", { x: m.l, y: m.t, width: w - m.l - m.r, height: H - m.t - m.b, fill: "transparent", style: "cursor:crosshair" }, svg);
+    const at = ev => { const r = svg.getBoundingClientRect(); return opt.x0 + ((ev.clientX - r.left) * w / r.width - m.l) / (w - m.l - m.r) * (opt.x1 - opt.x0); };
+    hit.addEventListener("pointermove", ev => { const v = at(ev); const j = idxOf(v); showTip(`<b>${sgn(LV[j])} m</b><br>` + series.map(s => `${s.name}: ${opt.tf(s.pts.reduce((a, b) => Math.abs(b[0] - LV[j]) < Math.abs(a[0] - LV[j]) ? b : a)[1])}`).join("<br>"), ev.clientX, ev.clientY - 6); });
+    hit.addEventListener("pointerleave", hideTip);
+    hit.addEventListener("click", ev => { stopPlay(); setLevel(idxOf(at(ev))); });
+  });
+  listeners.push(() => box._upd && box._upd());
+}
+const dogPts = LV.map((v, i) => [v, R.doggerland.land[i] / 1000]).filter(p => p[0] <= 0);
+lineChart(document.getElementById("chDog"), [{ name: "Doggerland", col: "var(--sand)", pts: dogPts }],
+  { x0: -130, x1: 0, y0: 0, y1: 350, xt: [-120, -90, -60, -30, 0], yt: [0, 100, 200, 300], yf: v => v + "k", tf: v => fmt(v * 1000) + " km²", aria: "Doggerland dry land by sea level" });
+const wPts = LV.map((v, i) => [v, v < 0 ? R.world.gained[i] / 1e6 : -(R.world.lost[i]) / 1e6]);
+const wPtsB = LV.map((v, i) => [v, v < 0 ? R.world.gained[i] / 1e6 : -(R.world.lost[i] + R.world.lost_b0[i]) / 1e6]);
+lineChart(document.getElementById("chWorld"), [{ name: "with land below sea level", col: "var(--violet)", pts: wPtsB }, { name: "change in land", col: "var(--hot)", pts: wPts }],
+  { x0: -130, x1: 70, y0: -18, y1: 21, xt: [-120, -60, 0, 60], yt: [-15, -10, -5, 0, 5, 10, 15, 20], yf: v => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v), tf: v => (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(2) + " million km²", zero: true, aria: "World land gained and lost by sea level" });
+const ukL = LV.map((v, i) => [v, v <= 0 ? 0 : R.uk.lost[i - POS0] / R.uk.land * 100]);
+const ukP = LV.map((v, i) => [v, v <= 0 ? 0 : R.msoa.under_pop[i - POS0] / R.msoa.pop_total * 100]);
+lineChart(document.getElementById("chUK"), [{ name: "UK land drowned", col: "var(--hot)", pts: ukL.filter(p => p[0] >= 0) }, { name: "people (England and Wales)", col: "var(--sea)", pts: ukP.filter(p => p[0] >= 0) }],
+  { x0: 0, x1: 70, y0: 0, y1: 65, xt: [0, 10, 20, 30, 40, 50, 60, 70], yt: [0, 20, 40, 60], yf: v => v + "%", tf: v => v.toFixed(1) + "%", aria: "UK land and people under water by sea level" });
+
+/* ---------------- tables ---------------- */
+const CN = Object.fromEntries(R.countries.map(c => [c.a3, c]));
+function tables() {
+  const v = lvl() > 0 ? lvl() : 7, p = idxOf(v) - POS0;
+  const rows = R.countries.filter(c => c.land >= 20000).map(c => ({ c, lost: c.lost[p], share: c.lost[p] / c.land }));
+  const byA = [...rows].sort((a, b) => b.lost - a.lost).slice(0, 10), byS = [...rows].sort((a, b) => b.share - a.share).slice(0, 5);
+  const mx = byA[0] ? byA[0].lost : 1;
+  document.getElementById("tCountries").innerHTML = `<table class="t"><thead><tr><th>Country</th><th class="num">km²</th><th class="num">share</th></tr></thead><tbody>` +
+    byA.map(r => `<tr><td>${esc(r.c.name)}<div class="bar" style="width:${(r.lost / mx * 100).toFixed(1)}%"></div></td><td class="num">${fmt(r.lost)}</td><td class="num">${pc(r.share, 1)}</td></tr>`).join("") +
+    `<tr><td colspan="3"><small>Largest shares: ${byS.map(r => `${esc(r.c.name)} ${pc(r.share, 0)}`).join(", ")}</small></td></tr></tbody></table>`;
+  const cs = CITIES ? CITIES.rows.filter(c => c[5] <= v + 1e-9).slice(0, 10) : [];
+  document.getElementById("tCities").innerHTML = CITIES ? `<table class="t"><thead><tr><th>City</th><th class="num">people</th><th class="num">height</th></tr></thead><tbody>` +
+    cs.map(c => `<tr class="go" data-c='${esc(JSON.stringify(c))}'><td>${esc(c[0])} <small>${esc(c[1])}</small></td><td class="num">${fmt(c[4])}</td><td class="num">${c[6]} m</td></tr>`).join("") + `</tbody></table>` : "<p class='src'>Loading cities…</p>";
+  document.querySelectorAll("#tCities tr.go").forEach(tr => tr.onclick = () => { const c = JSON.parse(tr.dataset.c); map.setView([c[2], c[3]], 8); placePopup(c[0], c[1], c[2], c[3], c[6], c[5], "c"); document.getElementById("map").scrollIntoView({ behavior: "smooth", block: "center" }); });
+  const ts = TOWNS ? TOWNS.rows.filter(t => t[5] <= v + 1e-9).sort((a, b) => a[5] - b[5] || b[6] - a[6]) : [];
+  document.getElementById("tTowns").innerHTML = TOWNS ? `<table class="t"><thead><tr><th>Town</th><th class="num">centre height</th><th class="num">sea reaches it</th></tr></thead><tbody>` +
+    ts.slice(0, 25).map(t => `<tr class="go" data-t='${esc(JSON.stringify(t))}'><td>${esc(t[0])} <small>${esc(t[1])}</small></td><td class="num">${t[4].toFixed(1)} m</td><td class="num">+${t[5].toFixed(1)} m</td></tr>`).join("") +
+    `<tr><td colspan="3"><small>${fmt(ts.length)} of ${fmt(TOWNS.rows.length)} places below the line${ts.length > 25 ? "; the 25 lowest shown" : ""}.</small></td></tr></tbody></table>` : "";
+  document.querySelectorAll("#tTowns tr.go").forEach(tr => tr.onclick = () => { const t = JSON.parse(tr.dataset.t); map.setView([t[2], t[3]], 10); placePopup(t[0], t[1], t[2], t[3], t[4], t[5], "t"); document.getElementById("map").scrollIntoView({ behavior: "smooth", block: "center" }); });
+}
+let tblT = 0;
+listeners.push(() => { clearTimeout(tblT); tblT = setTimeout(tables, playing ? 250 : 40); });
+
+/* ---------------- search ---------------- */
+const q = document.getElementById("q"), sug = document.getElementById("sug"), ans = document.getElementById("answer");
+const norm = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+let INDEX = [];
+function buildIndex() {
+  INDEX = [];
+  if (TOWNS) for (const t of TOWNS.rows) INDEX.push({ n: norm(t[0]), name: t[0], area: t[1], lat: t[2], lon: t[3], h: t[4], fl: t[5], pop: t[6] || 0, k: "t" });
+  if (CITIES) for (const c of CITIES.rows) if (c[1] !== "GB") INDEX.push({ n: norm(c[0]), name: c[0], area: c[1], lat: c[2], lon: c[3], h: c[6], fl: c[5], pop: c[4], k: "c" });
+}
+let sel = -1, cur = [];
+q.addEventListener("input", () => {
+  const s = norm(q.value.trim()); sel = -1;
+  if (s.length < 2) { sug.style.display = "none"; q.setAttribute("aria-expanded", "false"); return; }
+  cur = INDEX.filter(e => e.n.startsWith(s)).sort((a, b) => (a.k === "t" ? 0 : 1) - (b.k === "t" ? 0 : 1) || b.pop - a.pop).slice(0, 10);
+  if (cur.length < 10) cur = cur.concat(INDEX.filter(e => !e.n.startsWith(s) && e.n.includes(s)).sort((a, b) => b.pop - a.pop).slice(0, 10 - cur.length));
+  sug.innerHTML = cur.map((e, i) => `<li role="option" data-i="${i}">${esc(e.name)} <span>${esc(e.area)}</span></li>`).join("");
+  sug.style.display = cur.length ? "block" : "none"; q.setAttribute("aria-expanded", cur.length ? "true" : "false");
+  sug.querySelectorAll("li").forEach(li => li.onclick = () => choose(cur[+li.dataset.i]));
+});
+q.addEventListener("keydown", e => {
+  const items = sug.querySelectorAll("li"); if (!items.length) return;
+  if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); sel = (sel + (e.key === "ArrowDown" ? 1 : -1) + items.length) % items.length; items.forEach((x, i) => x.setAttribute("aria-selected", i === sel)); }
+  if (e.key === "Enter") { e.preventDefault(); choose(cur[Math.max(0, sel)]); }
+  if (e.key === "Escape") { sug.style.display = "none"; }
+});
+function choose(e) {
+  if (!e) return; sug.style.display = "none"; q.value = e.name; q.setAttribute("aria-expanded", "false");
+  const never = e.fl >= 900;
+  ans.innerHTML = `<div class="big">${esc(e.name)}: ${never ? "the modelled sea does not reach its centre even at +70 m" : `the modelled sea reaches its centre at about +${e.fl} m`}</div>
+  <div class="pn">Centre point height about ${fmt(e.h)} m (${e.k === "t" ? "zoom-10 terrain, about 95 to 150 m cells" : "GeoNames"}). ${e.k === "t" ? (e.pop ? `Built-up area population (Census 2021): ${fmt(e.pop)}. ` : "") : `Population (GeoNames): ${fmt(e.pop)}. `}${never ? "" : `<a href="#map" id="goLvl">Set the sea to +${e.fl} m and show it on the map</a>. `}This is a coarse bathtub model and says nothing reliable about individual streets or houses.</div>`;
+  const go = document.getElementById("goLvl");
+  if (go) go.onclick = ev => { ev.preventDefault(); stopPlay(); setLevel(idxOf(e.fl)); map.setView([e.lat, e.lon], e.k === "t" ? 10 : 8); placePopup(e.name, e.area, e.lat, e.lon, e.h, e.fl, e.k); document.getElementById("map").scrollIntoView({ behavior: "smooth", block: "center" }); };
+}
+
+/* ---------------- start ---------------- */
+(async () => {
+  sizeOverlay(); map.fitBounds(VIEWS.uk);
+  try {
+    await loadSrc("world");
+    await loadSrc("europe");
+  } catch (err) { document.getElementById("loading").textContent = "The elevation model could not be loaded."; return; }
+  buildLUT(); bath.addTo(map);
+  document.getElementById("loading").remove();
+  setLevel(idxOf(-40));
+  fetch("data/coast.json").then(r => r.json()).then(j => { COAST = j; drawOverlay(); });
+  fetch("data/cities_page.json").then(r => r.json()).then(j => { CITIES = j; buildIndex(); tables(); drawOverlay(); });
+  fetch("data/uk_towns_page.json").then(r => r.json()).then(j => { TOWNS = j; buildIndex(); tables(); drawOverlay(); });
+})();
+updateHead(); readout(); bridges(); tables();
+</script>
+</body>
+</html>
