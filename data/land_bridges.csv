@@ -1,0 +1,11 @@
+link,place_a,place_b,grid,joined_when_sea_at_or_below_m
+Beringia: Asia and North America,Chukotka,Alaska,zoom 4 world,-43.0
+Sahul: New Guinea and Australia,"Merauke, New Guinea","Cape York, Australia",zoom 4 world,-5.0
+Tasmania and mainland Australia,Hobart,Melbourne,zoom 4 world,-23.0
+Sunda: Borneo and the Malay Peninsula,Kuching,Kuala Lumpur,zoom 4 world,-35.0
+Sri Lanka and India,Jaffna,Madurai,zoom 4 world,-1.0
+Taiwan and mainland China,Taipei,Fuzhou,zoom 4 world,-56.0
+Great Britain and continental Europe,London,Paris,zoom 7 Europe,-30.0
+Ireland and Great Britain,Dublin,Liverpool,zoom 7 Europe,-38.0
+Great Britain and continental Europe,London,Paris,zoom 4 world,-29.0
+Ireland and Great Britain,Dublin,Liverpool,zoom 4 world,-41.0
