@@ -1,0 +1,782 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Drowned and Rising</title>
+<meta name="description" content="Move the sea from the Ice Age to a world without ice: a bathtub model of Britain and the world at every sea level, with Doggerland, land bridges, cities and UK towns.">
+<meta property="og:title" content="Drowned and rising: Britain and the world at every sea level">
+<meta property="og:description" content="A sea-level slider from -130 m to +70 m. In this model Britain stays joined to the continent until the sea is 30 m below today's; at +70 m a third of the UK's land is under water.">
+<meta property="og:image" content="https://tristan-hotham.github.io/sea-level/header.png">
+<meta property="og:url" content="https://tristan-hotham.github.io/sea-level/">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800;9..144,900&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+/* Sea glass and sand. The map itself keeps one palette in both themes; the page around it follows the reader's theme. */
+:root{
+  --bg:#F3F0E6; --panel:#E6E1D2; --fg:#13242C; --muted:#5B6869; --rule:#D5CFBD; --card:#FBF9F2; --border:#C2BBA5;
+  --hot:#C8492F; --sea:#1F5F7A; --glass:#5FA8A6; --sand:#C9A55A; --violet:#7D5BA6; --land:#9AA77E;
+  --display:"Fraunces",Georgia,"Times New Roman",serif;
+  --body:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#10181B; --panel:#1A2427; --fg:#E8EEEC; --muted:#9AA8A8; --rule:#2B3739; --card:#162023; --border:#3C4B4E;
+  --hot:#F07A5E; --sea:#7FB8D0; --glass:#86C9C4; --sand:#E2C27E; --violet:#B59AD8; --land:#B9C59C; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10181B; --panel:#1A2427; --fg:#E8EEEC; --muted:#9AA8A8; --rule:#2B3739; --card:#162023; --border:#3C4B4E;
+  --hot:#F07A5E; --sea:#7FB8D0; --glass:#86C9C4; --sand:#E2C27E; --violet:#B59AD8; --land:#B9C59C; color-scheme:dark}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:400 18px/1.62 var(--body);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));overflow-x:hidden}
+.wrap{max-width:700px;margin:0 auto;padding-block:28px 64px}
+.wrap .bleed{width:min(1120px,calc(100vw - 32px));margin-left:calc((100% - min(1120px,100vw - 32px))/2)}
+a{color:inherit;text-decoration-color:var(--glass);text-underline-offset:3px}
+.kicker{font:500 12px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.kicker b{background:var(--sea);color:#fff;padding:5px 8px;font-weight:500}
+header.hero{border-bottom:6px double var(--fg);padding-bottom:22px;margin-top:18px;position:relative}
+h1{font:900 clamp(46px,12vw,104px)/.88 var(--display);letter-spacing:-.025em;margin:0;text-wrap:balance}
+h1 em{font-style:normal;color:var(--sea)}
+h1 span{color:var(--hot)}
+.dek{font-size:21px;line-height:1.42;margin:14px 0 0;max-width:48ch}
+.byline{font:400 13px/1.4 var(--mono);color:var(--muted);margin-top:14px}
+h2{font:800 34px/1.04 var(--display);letter-spacing:-.01em;margin:56px 0 10px;text-wrap:balance}
+h2 .n{font:500 13px/1 var(--mono);color:var(--sea);display:block;letter-spacing:.1em;margin-bottom:10px}
+h3{font:600 20px/1.25 var(--display);margin:28px 0 6px}
+p{margin:0 0 16px}
+li,.src,footer p{overflow-wrap:anywhere}
+.lede::first-letter{font:900 72px/.8 var(--display);float:left;margin:6px 10px 0 0;color:var(--sea)}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);margin:26px 0 8px}
+.stats div{background:var(--card);padding:14px 12px}
+.stats b{display:block;font:900 clamp(26px,5.6vw,38px)/1 var(--display)}
+.stats b.s{color:var(--sea)} .stats b.h{color:var(--hot)} .stats b.d{color:var(--sand)}
+.stats span{font:400 12px/1.35 var(--mono);color:var(--muted);display:block;margin-top:6px}
+@media (max-width:600px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* the instrument */
+.inst{background:var(--card);border:1px solid var(--border);border-top:6px solid var(--sea);margin:24px 0 10px}
+.inst-top{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px 16px;align-items:center;padding:14px 14px 4px}
+.level{font:900 clamp(40px,9vw,64px)/.9 var(--display);letter-spacing:-.02em;min-width:4.2ch;font-variant-numeric:tabular-nums}
+.level small{font:500 15px/1 var(--mono);letter-spacing:0;color:var(--muted);margin-left:2px}
+.level.up{color:var(--hot)} .level.down{color:var(--sand)} .level.zero{color:var(--sea)}
+.ctx{font:400 14px/1.45 var(--body);min-width:0}
+.ctx b{font:600 16px/1.25 var(--display);display:block}
+.playb{font:500 13px/1 var(--mono);background:var(--fg);color:var(--bg);border:0;border-radius:3px;padding:11px 14px;cursor:pointer;min-height:40px;white-space:nowrap}
+.slidewrap{padding:4px 14px 2px;position:relative}
+input[type=range]{width:100%;margin:10px 0 0;accent-color:var(--sea);height:30px;touch-action:none}
+.ticks{position:relative;height:40px;font:400 11px/1.15 var(--mono);color:var(--muted);margin:0 7px}
+.ticks button{position:absolute;transform:translateX(-50%);background:none;border:0;padding:3px 0 0;cursor:pointer;color:inherit;font:inherit;text-align:center;white-space:nowrap}
+.ticks button::before{content:"";display:block;width:1px;height:8px;background:var(--muted);margin:0 auto 3px}
+.ticks button.last{transform:translateX(-100%);text-align:right}
+.ticks button.last::before{margin:0 0 3px auto}
+.band{position:absolute;top:22px;height:5px;background:var(--hot);border-radius:2px;pointer-events:none;opacity:.9}
+.ticks button:hover,.ticks button:focus-visible{color:var(--fg)}
+@media (max-width:600px){.ticks .opt{display:none}}
+@media (max-width:600px){.inst-top{grid-template-columns:auto 1fr}.ctx{grid-column:1/-1;grid-row:2;min-height:6.2em}.playb{justify-self:end}}
+@media (min-width:601px){.ctx{min-height:3em}}
+.marks{display:flex;gap:6px;flex-wrap:wrap;padding:6px 14px 12px}
+.btn{font:500 12px/1 var(--mono);background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:3px;padding:8px 10px;cursor:pointer;min-height:36px}
+.btn[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.btn:focus-visible,input:focus-visible,.playb:focus-visible,summary:focus-visible{outline:2px solid var(--hot);outline-offset:2px}
+.mapbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:0 14px 10px}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:3px;overflow:hidden;flex-wrap:wrap}
+.seg .btn{border:0;border-radius:0;border-right:1px solid var(--border)}
+.seg .btn:last-child{border-right:0}
+.chk{font:400 12px/1.2 var(--mono);color:var(--muted);display:inline-flex;gap:6px;align-items:center;cursor:pointer}
+.chk input{accent-color:var(--sea);width:16px;height:16px}
+#map{height:620px;background:#1D4766;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+@media (max-width:600px){#map{height:66vh;min-height:380px}}
+.leaflet-container{font:400 12px/1.4 var(--mono)}
+.leaflet-tile{image-rendering:pixelated}
+.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--card);color:var(--fg);border-radius:3px;box-shadow:0 2px 10px rgba(0,0,0,.25)}
+.leaflet-popup-content{margin:12px 14px;font:400 12.5px/1.45 var(--mono);min-width:200px}
+.leaflet-container a.leaflet-popup-close-button{color:var(--muted)}
+.leaflet-bar a,.leaflet-bar a:hover{background:var(--card);color:var(--fg);border-bottom-color:var(--border)}
+.leaflet-control-attribution{background:color-mix(in srgb,var(--card) 85%,transparent)!important;color:var(--muted)}
+.leaflet-control-attribution a{color:var(--fg)}
+.pop b.t{font:600 17px/1.2 var(--display);display:block;margin-bottom:2px}
+.pop .c{color:var(--muted);margin-bottom:6px}
+.pop .w{color:var(--muted);font-size:11.5px;margin-top:6px;display:block}
+#overlay{position:absolute;inset:0;pointer-events:none;z-index:450}
+.mapwrap{position:relative}
+.loading{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:460;font:500 13px/1 var(--mono);background:var(--card);color:var(--fg);padding:10px 12px;border:1px solid var(--border);border-radius:3px}
+.key{display:flex;gap:6px 14px;flex-wrap:wrap;font:400 12px/1.3 var(--mono);color:var(--muted);padding:10px 14px}
+.key i{display:inline-block;width:12px;height:12px;margin-right:6px;vertical-align:-1px;border:1px solid rgba(0,0,0,.15)}
+.readout{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--rule);border-top:1px solid var(--rule)}
+.readout div{background:var(--card);padding:12px 12px 12px}
+.readout b{display:block;font:800 clamp(21px,4.2vw,30px)/1.05 var(--display);font-variant-numeric:tabular-nums}
+.readout span{display:block;font:400 12px/1.4 var(--mono);color:var(--muted);margin-top:5px}
+.readout em{font-style:normal;color:var(--fg)}
+@media (max-width:760px){.readout{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.bridges{display:flex;flex-wrap:wrap;gap:6px;padding:12px 14px 14px;border-top:1px solid var(--rule)}
+.bridges .lab0{font:500 12px/1.3 var(--mono);color:var(--muted);width:100%}
+.chip{font:400 12px/1.2 var(--mono);padding:7px 9px;border-radius:999px;border:1px solid var(--border);color:var(--muted);background:var(--bg);cursor:pointer}
+.chip.on{background:var(--sand);border-color:var(--sand);color:#2A2210}
+.chip b{font-weight:500}
+.figure{margin:26px 0 30px}
+.fig-h{font:600 19px/1.25 var(--display);margin:0 0 4px}
+.fig-sub{font:400 13px/1.45 var(--mono);color:var(--muted);margin:0 0 12px}
+.src{font:400 12px/1.45 var(--mono);color:var(--muted);margin-top:10px}
+.chart{width:100%;position:relative}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+svg text{font-family:var(--mono);fill:var(--fg)}
+.lab{font-size:12px}.lab.m{fill:var(--muted)}.lab.b{font-weight:500}
+.tip{position:absolute;pointer-events:none;background:var(--fg);color:var(--bg);font:400 12px/1.45 var(--mono);padding:8px 10px;border-radius:3px;max-width:280px;z-index:1000;transform:translate(-50%,calc(-100% - 12px));display:none}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}
+@media (max-width:760px){.grid2{grid-template-columns:1fr}}
+table.t{width:100%;border-collapse:collapse;font:400 13px/1.35 var(--mono)}
+table.t th{text-align:left;font-weight:500;color:var(--muted);border-bottom:2px solid var(--fg);padding:6px 8px 6px 0}
+table.t td{border-bottom:1px solid var(--rule);padding:7px 8px 7px 0;vertical-align:top}
+table.t td.num,table.t th.num{text-align:right;white-space:nowrap}
+table.t td small{color:var(--muted);display:block}
+table.t tr.go{cursor:pointer}
+table.t tr.go:hover td{background:var(--panel)}
+.bar{height:8px;background:var(--hot);border-radius:1px;margin-top:4px;opacity:.85}
+.searchbox{position:relative;flex:1 1 260px;min-width:0}
+input[type=search]{font:400 15px/1 var(--mono);background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:3px;padding:10px 11px;min-height:40px;width:100%}
+.suggest{position:absolute;left:0;right:0;top:100%;margin:2px 0 0;padding:0;list-style:none;background:var(--card);border:1px solid var(--border);z-index:1001;font:400 13px/1.3 var(--mono);display:none;max-height:320px;overflow:auto}
+.suggest li{padding:8px 10px;cursor:pointer;border-bottom:1px solid var(--rule)}
+.suggest li span{color:var(--muted)}
+.suggest li[aria-selected="true"],.suggest li:hover{background:var(--panel)}
+.finder{background:var(--card);border:1px solid var(--border);border-top:6px solid var(--hot);padding:16px;margin:20px 0 14px}
+#answer{min-height:24px;margin-top:10px}
+#answer .big{font:800 clamp(22px,4.6vw,30px)/1.15 var(--display);margin:6px 0 8px;text-wrap:balance}
+#answer .pn{font:400 12px/1.5 var(--mono);color:var(--muted)}
+.pull{font:600 26px/1.25 var(--display);border-left:6px solid var(--sea);padding:4px 0 4px 18px;margin:30px 0}
+.note{background:var(--panel);border:1px solid var(--rule);padding:14px 16px;font-size:16px;margin:22px 0}
+.note h3{margin-top:0}
+.note.warn{border-left:6px solid var(--hot)}
+details{margin:14px 0}
+summary{font:500 13px/1.4 var(--mono);cursor:pointer;color:var(--fg);padding:8px 0}
+.cta{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}
+.cta a{font:500 13px/1 var(--mono);text-decoration:none;border:1px solid var(--fg);padding:11px 14px;border-radius:3px}
+.cta a.p{background:var(--sea);border-color:var(--sea);color:#fff}
+footer{border-top:6px double var(--fg);margin-top:56px;padding-top:16px;font:400 13px/1.55 var(--mono);color:var(--muted)}
+footer p{margin:0 0 10px}
+.theme{position:fixed;right:12px;bottom:12px;z-index:1002}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media print{.theme,.mapbar,.marks{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="kicker"><b>Data study</b><span>Sea level</span><span>Ice Age to ice-free</span></div>
+<header class="hero">
+  <h1><em>Drowned</em> and <span>rising</span></h1>
+  <p class="dek">Britain and the world at every sea level, from the depth of the last Ice Age, when you could walk from Yorkshire to Denmark, to a world with no ice left at all. Move the sea and watch the map, the land and the numbers change.</p>
+</header>
+<div class="byline">Dr Tristan Hotham, Independent researcher · October 2026 · Elevation: AWS Terrain Tiles (Mapzen, ETOPO1, GMTED2010, SRTM, EU-DEM and others); Natural Earth; GeoNames; OS Open Names; ONS</div>
+
+<div class="stats">
+  <div><b class="d">341k km²</b><span> of the southern North Sea floor is dry land in the model at the Ice Age low</span></div>
+  <div><b class="s">−30 m</b><span>the sea level at which Britain's last land link to the continent goes under, using today's seabed</span></div>
+  <div><b class="h">61</b><span>UK towns and cities whose centre point is under a +7 m sea, the height of Greenland's ice</span></div>
+  <div><b class="h">33%</b><span>of the UK's land under water at +70 m, if all the ice on Earth melted</span></div>
+</div>
+
+<p class="lede">The coast is not a fixed line. Twenty thousand years ago, at the height of the last Ice Age, so much water was locked up in ice sheets that the sea stood about 120 m lower than today. The southern North Sea was a country of hills, rivers and marshes that archaeologists call Doggerland, and Britain was the far corner of Europe. If the ice that is left melted, the sea would rise by tens of metres and draw a new coast through London, the Fens and half the world's great cities.</p>
+<p>This page is a simple instrument for thinking about that. It takes a global model of the height of the land and the depth of the sea, sets the water to any level you choose, and floods every place below that level that the sea can reach. It is what geographers call a bathtub model: crude, honest about being crude, and good for seeing the shape of things. It is not a flood map, and it cannot tell you about your street.</p>
+
+<h2><span class="n">01 · The instrument</span>Set the sea</h2>
+<p>Drag the slider, press play, or jump to a moment. The map redraws as you go, and so do the numbers under it. Switch between the whole world and Britain with the North Sea, and zoom in for sharper terrain where your browser can fetch it.</p>
+</div>
+
+<div class="wrap"><div class="bleed">
+<section class="inst" aria-label="Sea level instrument">
+  <div class="inst-top">
+    <div class="level zero" id="lvl" aria-live="polite">0<small> m</small></div>
+    <div class="ctx" id="ctx"></div>
+    <button class="playb" id="play" aria-label="Play from the Ice Age to all ice melted">▶ Play</button>
+  </div>
+  <div class="slidewrap">
+    <label class="sr" for="slider">Sea level relative to today, metres</label>
+    <input type="range" id="slider" min="0" max="1" step="1" value="0">
+    <div class="ticks" id="ticks"></div>
+  </div>
+  <div class="marks" id="marks"></div>
+  <div class="mapbar">
+    <div class="seg" role="group" aria-label="View">
+      <button class="btn" data-view="uk" aria-pressed="true">Britain and the North Sea</button>
+      <button class="btn" data-view="world" aria-pressed="false">The world</button>
+    </div>
+    <label class="chk"><input type="checkbox" id="coast" checked> today's coast</label>
+    <label class="chk"><input type="checkbox" id="dots" checked> places under water</label>
+    <label class="chk"><input type="checkbox" id="live" checked> sharper terrain when zoomed in</label>
+  </div>
+  <div class="mapwrap"><div id="map" role="img" aria-label="Map of land and sea at the chosen sea level"></div><canvas id="overlay"></canvas><div class="loading" id="loading">Loading the elevation model…</div></div>
+  <div class="key">
+    <span><i style="background:#C9D3AE"></i>land today</span>
+    <span><i style="background:#E07A5C"></i>land drowned</span>
+    <span><i style="background:#9B7BC0"></i>land already below today's sea level, drowned</span>
+    <span><i style="background:#E8D49C"></i>sea floor exposed</span>
+    <span><i style="background:#8CC3C4"></i>shallow sea</span>
+    <span><i style="background:#2C5F82"></i>deep sea</span>
+  </div>
+  <div class="readout" id="readout"></div>
+  <div class="bridges" id="bridges"></div>
+</section>
+<p class="src">Map: my bathtub model on AWS Terrain Tiles (zoom 4 for the world, about 10 km cells at the equator; zoom 7 for Britain and the North Sea, about 700 m). Zoomed in, the page fetches finer tiles from the same source and checks them against the coarse model; if it cannot, it shows the coarse cells. Antarctica is drawn as it is today. Coast: Natural Earth 1:10m. Numbers: worldwide figures leave out Antarctica; UK figures use a 190 m grid.</p>
+</div></div>
+
+<div class="wrap">
+<div class="note warn">
+<h3>A bathtub, not a forecast</h3>
+<p>The model raises or lowers a flat sea and floods whatever is lower and joined to the ocean. Real coasts have sea walls, tides, storms, rivers, sinking and rising land, and an ocean whose surface is not flat. The elevation is coarse: about 10 km for the world, 700 m around Britain on the map and 190 m for the UK numbers, with errors of metres. Results for one town are indicative only, and nothing here tells you whether a particular house will flood. For that, use your national flood maps (in England, <a href="https://www.gov.uk/check-long-term-flood-risk">Check your long term flood risk</a>).</p>
+</div>
+
+<h2><span class="n">02 · Down</span>When Britain was not an island</h2>
+<p>Drop the sea to the Ice Age low and the map fills with sand colour: the floor of today's shallow seas, dry. Worldwide, outside Antarctica, the model exposes 19.4 million km² of sea floor at −125 m, an area 14% the size of today's land. Among the gains are the great continental shelves: the plain between Siberia and Alaska, the shelf joining Borneo, Sumatra and Java to Asia, and the one joining New Guinea to Australia.</p>
+<p>Around Britain, the whole of the southern North Sea comes up. In my box from 51.0° to 57.5° N and 3.0° W to 9.0° E, the model has 340,713 km² of dry land at the Ice Age low, almost all of the box. At −40 m it still has 180,256 km², and at −20 m only 42,627 km², mostly in strips along today's coasts. The Dogger Bank, the high ground in the middle, goes under in the model at −22 m; Wikipedia says it remained an island until at least 5000 BCE.</p>
+
+<div class="figure">
+  <div class="fig-h">Doggerland, the drowned land of the southern North Sea</div>
+  <div class="fig-sub">Dry land in the box 51.0° to 57.5° N, 3.0° W to 9.0° E, at each sea level below today's. Click to set the sea.</div>
+  <div class="chart" id="chDog"></div>
+</div>
+
+<p>The moment that matters for British history is when the last land link to the continent goes under. Using today's seabed, that happens in the model when the sea reaches <b>−30 m</b> (on the coarse world grid, −29 m). Ireland parts from Britain earlier, at −38 m. Wikipedia's account of Doggerland says it was inundated between 10,000 and 7,000 years ago, and that the tsunami from the Storegga underwater landslide off Norway, about 8,200 years ago, may have flooded much of what was left. I do not turn my levels into dates. Today's seabed is not the seabed of 8,000 years ago: rivers, tides and storms have moved sediment since, and the land itself has risen in the north of Britain and sunk in the south since the ice melted. The order of events is the robust part; the exact metres are not.</p>
+<div class="pull">In the model, the last land link from Britain to the continent goes under at −30 m.</div>
+<p>The same calculation for other famous land bridges, all on the coarse world grid and today's seabed, is under the map: light up a chip and the sea drops to that level.</p>
+
+<h2><span class="n">03 · Up</span>What a rising sea takes</h2>
+<p>Now raise the sea. The first metre matters most to people alive today. The Intergovernmental Panel on Climate Change's Sixth Assessment Report (AR6) gives likely ranges for global sea level in 2100, relative to 1995 to 2014, of 0.28 to 0.55 m under very low emissions and 0.63 to 1.01 m under very high emissions. Those are the slider's thin coral band. Over the next 2,000 years it expects about 2 to 3 m if warming is limited to 1.5 °C, 2 to 6 m at 2 °C and 19 to 22 m with 5 °C of warming.</p>
+<p>A bathtub model is at its weakest exactly there. The world grid only resolves whole metres and 10 km cells, so at +1 m it mostly measures how many cells sit right on the shore. Around Britain, at +1 m the model drowns 275 km² of land that it puts above today's sea level, plus 574 km² that it already puts below sea level (land kept dry today by banks, pumps and sea walls, which the model does not have). Real flood risk in 2100 will be set by storms and defences far more than by this arithmetic.</p>
+<p>Higher up, the shapes become clear. At +7 m, about what the Greenland ice sheet would add if it all melted, the model drowns 10,509 km² of the UK (4.3% of its land), puts the centre points of 61 towns and cities under water, and reaches neighbourhoods home to 2,645,000 people in England and Wales (4.4%). Worldwide, 1,877 cities of more than 15,000 people have their centre below the line, home to 234 million.</p>
+<p>At +70 m, about what you get if every ice sheet and glacier melted, 33% of the UK's land is gone and 60% of the people of England and Wales live in neighbourhoods whose centre is under water. The world loses 14.0 million km² (10.2% of its land outside Antarctica) and 12,857 cities with 1.91 billion people. The Netherlands loses 97% of its land in the finer grid, and among large countries Denmark and Bangladesh lose about nine tenths. That would take many centuries to millennia, but it is the size of what the ice holds.</p>
+
+<div class="grid2 figure">
+  <div>
+    <div class="fig-h">Land gained and lost, worldwide</div>
+    <div class="fig-sub">Million km² compared with today, outside Antarctica. Coral: drowned; violet: already below sea level.</div>
+    <div class="chart" id="chWorld"></div>
+  </div>
+  <div>
+    <div class="fig-h">The UK under a rising sea</div>
+    <div class="fig-sub">Share of UK land drowned, and share of people in England and Wales whose neighbourhood centre is under water.</div>
+    <div class="chart" id="chUK"></div>
+  </div>
+</div>
+
+<h2><span class="n">04 · Who loses most</span>Countries and cities at <span id="lvlh2">+7 m</span></h2>
+<p>These tables follow the slider. Countries are ranked by land drowned (model height at or above today's sea level), first by area and then as a share of the country, among countries with at least 20,000 km² of land in the grid. Cities are GeoNames places of more than 15,000 people; their heights are GeoNames' own point heights, which are rough, and a city counts once the modelled sea comes within one grid cell of it.</p>
+<div class="grid2">
+  <div><div class="fig-h">Most land drowned</div><div class="tablewrap" id="tCountries"></div></div>
+  <div><div class="fig-h">Largest cities below the line</div><div class="tablewrap" id="tCities"></div></div>
+</div>
+
+<h2><span class="n">05 · Britain</span>Find a place</h2>
+<p>Search for a British town or city (OS Open Names, 1,426 places) or any city in the world over 15,000 people (GeoNames). You will see the height the data give for its centre point and the level at which the modelled sea first reaches it. A town is a place, not a point: its centre may stay dry while its harbour floods, or the other way round.</p>
+<section class="finder" aria-label="Find a place">
+  <div class="searchbox"><input type="search" id="q" placeholder="Hull, Norwich, Glasgow, Lagos…" autocomplete="off" aria-label="Search for a place" role="combobox" aria-expanded="false" aria-controls="sug"><ul class="suggest" id="sug" role="listbox"></ul></div>
+  <div id="answer"><div class="pn">Try a coastal town, or a city on a big river.</div></div>
+</section>
+<div class="figure">
+  <div class="fig-h">UK towns and cities below the line at <span class="lvlname">+7 m</span></div>
+  <div class="fig-sub">OS Open Names cities and towns whose centre point is under the modelled sea, lowest first. Click a row to see it on the map.</div>
+  <div class="tablewrap" id="tTowns"></div>
+</div>
+
+<h2><span class="n">06 · Method</span>How the bathtub works</h2>
+<p><b>Elevation.</b> AWS Terrain Tiles combine several open elevation and bathymetry datasets into one global model of land height and sea depth in metres. I used the zoom-4 tiles for the world (4,096 by 4,096 web-mercator cells, about 9.8 km wide at the equator and 6 km at 52° N), the zoom-7 tiles for Britain, Ireland and the North Sea (about 700 m), and a zoom-10 extract for Britain and Ireland, averaged to about 190 m, for the UK numbers.</p>
+<p><b>Today's coast.</b> Level 0 is today's coast from Natural Earth's 1:10m land, not from the elevation model, so the map at 0 m looks like the world. At or below 0 m, today's land stays land; at or above 0 m, today's sea stays sea. The Caspian Sea is treated as a lake, apart from the ocean.</p>
+<p><b>Flooding.</b> For each of 216 levels from −130 m to +70 m (1 m apart, and 0.25 m apart between −2 and +3 m), a cell is sea if it is below the level and joined to the ocean through other cells below the level (cells touching at edges or corners). A falling sea leaves enclosed basins as water. Land that is already below sea level today floods at the first rise if the ocean can reach it, because the model has no sea walls; I count it separately.</p>
+<p><b>Places.</b> A place is under water when its point height is below the level and the modelled sea at that level reaches within one grid cell (about 10 km for the world, about 700 m around Britain on the coarse grid, about 190 m for UK places). Point heights: GeoNames' own height for world cities; the zoom-10 elevation for UK places. People in England and Wales are counted by Census 2021 Middle Layer Super Output Areas (neighbourhoods of about 8,000 people) whose population-weighted centre is under water. Scotland and Northern Ireland are in the town counts and land areas but not in the population figure.</p>
+<p><b>Land bridges.</b> For each pair of places I find the highest sea level at which they are joined by land (cells touching at edges) on today's seabed.</p>
+<details><summary>Caveats in full</summary>
+<p>No tides, storms, waves, defences, rivers or groundwater. No change in the shape of the land: since the Ice Age the ground has risen where the ice was thick (Scotland) and sagged around it, and melting ice today would change the Earth's gravity and crust so that the sea would not rise evenly. No erosion or sediment: the seabed of 8,000 years ago was not today's. The elevation model mixes sources of different ages and accuracy, sea-floor depths are interpolated in many places, coarse cells average land and sea at the coast, and lakes are mostly recorded at their surface. The world grid has whole-metre heights, so its numbers move in steps. Worldwide figures leave out Antarctica, whose land surface is mostly the ice sheet itself. GeoNames point heights are averages over 90 m or 900 m cells. All of this makes the model good for broad shapes and comparisons and poor for any single place.</p>
+</details>
+
+<h2><span class="n">07 · Sources</span>Data and licences</h2>
+<ul>
+<li>Elevation and bathymetry: AWS Terrain Tiles (Mapzen and Tilezen terrarium format), https://registry.opendata.aws/terrain-tiles/. Sources as required by its attribution: ETOPO1 (NOAA), GMTED2010 (USGS), SRTM (NASA), EU-DEM (Copernicus, produced using Copernicus data and information funded by the European Union), Canadian Digital Elevation Data, NED (USGS), Great Lakes bathymetry (NOAA), Arctic DEM (Polar Geospatial Center), LINZ (New Zealand), data.gov.uk (Environment Agency LIDAR, Open Government Licence), and others listed at https://github.com/tilezen/joerd/blob/master/docs/attribution.md.</li>
+<li>Coast, land and country outlines: Natural Earth 1:10m (public domain).</li>
+<li>World cities: GeoNames cities15000 (CC BY 4.0), https://www.geonames.org.</li>
+<li>UK places: OS Open Names, contains OS data © Crown copyright and database right 2026 (Open Government Licence v3.0).</li>
+<li>Census 2021 TS001, MSOA population-weighted centroids, 2022 built-up areas: Office for National Statistics (Open Government Licence v3.0).</li>
+<li>Sea-level history and projections: IPCC AR6 Working Group I (2021) and Synthesis Report (2023), as quoted on the Hong Kong Observatory and IPCC pages; English Wikipedia, "Doggerland", "Last Glacial Maximum" and "Greenland ice sheet" (CC BY-SA 4.0); Antarctic ice volume from BedMachine Antarctica (Morlighem et al. 2020) as given by AntarcticGlaciers.org.</li>
+<li>Map library Leaflet 1.9.4; live tiles fetched from the public AWS bucket where the browser allows.</li>
+</ul>
+<div class="cta"><a class="p" href="https://doi.org/10.5281/zenodo.23732578">Read the paper</a><a href="https://github.com/Tristan-Hotham/sea-level">Data and code</a><a href="https://blog.tristanhotham.com/">All posts</a></div>
+
+<footer>
+  <p>Dr Tristan Hotham, Independent researcher. ORCID 0000-0003-4931-9349. Cite as: Hotham, T. (2026) Drowned and rising: Britain and the world at every sea level. https://doi.org/10.5281/zenodo.23732578</p>
+  <p>I wrote the text, with drafting and editing assistance from Claude (Anthropic), which also helped prepare the analysis code. I reviewed and checked all text and results.</p>
+  <p>Elevation: AWS Terrain Tiles (Mapzen; ETOPO1, GMTED2010, SRTM, EU-DEM and others). Natural Earth (public domain). GeoNames (CC BY 4.0). Contains OS data © Crown copyright and database right 2026, and ONS data (Open Government Licence v3.0). Text and figures: CC BY 4.0. Code: MIT. Other studies: <a href="https://tristan-hotham.github.io/pleasant-months/">Pleasant months</a>, <a href="https://tristan-hotham.github.io/within-sight/">Within sight</a>, <a href="https://blog.tristanhotham.com/">all posts</a>.</p>
+</footer>
+</div>
+<div class="tip" id="tip"></div>
+<button class="btn theme" id="theme" aria-label="Toggle dark mode">◐</button>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const R = {"levels":[-130.0,-129.0,-128.0,-127.0,-126.0,-125.0,-124.0,-123.0,-122.0,-121.0,-120.0,-119.0,-118.0,-117.0,-116.0,-115.0,-114.0,-113.0,-112.0,-111.0,-110.0,-109.0,-108.0,-107.0,-106.0,-105.0,-104.0,-103.0,-102.0,-101.0,-100.0,-99.0,-98.0,-97.0,-96.0,-95.0,-94.0,-93.0,-92.0,-91.0,-90.0,-89.0,-88.0,-87.0,-86.0,-85.0,-84.0,-83.0,-82.0,-81.0,-80.0,-79.0,-78.0,-77.0,-76.0,-75.0,-74.0,-73.0,-72.0,-71.0,-70.0,-69.0,-68.0,-67.0,-66.0,-65.0,-64.0,-63.0,-62.0,-61.0,-60.0,-59.0,-58.0,-57.0,-56.0,-55.0,-54.0,-53.0,-52.0,-51.0,-50.0,-49.0,-48.0,-47.0,-46.0,-45.0,-44.0,-43.0,-42.0,-41.0,-40.0,-39.0,-38.0,-37.0,-36.0,-35.0,-34.0,-33.0,-32.0,-31.0,-30.0,-29.0,-28.0,-27.0,-26.0,-25.0,-24.0,-23.0,-22.0,-21.0,-20.0,-19.0,-18.0,-17.0,-16.0,-15.0,-14.0,-13.0,-12.0,-11.0,-10.0,-9.0,-8.0,-7.0,-6.0,-5.0,-4.0,-3.0,-2.0,-1.75,-1.5,-1.25,-1.0,-0.75,-0.5,-0.25,0.0,0.25,0.5,0.75,1.0,1.25,1.5,1.75,2.0,2.25,2.5,2.75,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0,11.0,12.0,13.0,14.0,15.0,16.0,17.0,18.0,19.0,20.0,21.0,22.0,23.0,24.0,25.0,26.0,27.0,28.0,29.0,30.0,31.0,32.0,33.0,34.0,35.0,36.0,37.0,38.0,39.0,40.0,41.0,42.0,43.0,44.0,45.0,46.0,47.0,48.0,49.0,50.0,51.0,52.0,53.0,54.0,55.0,56.0,57.0,58.0,59.0,60.0,61.0,62.0,63.0,64.0,65.0,66.0,67.0,68.0,69.0,70.0],"k0":137,"world":{"land":137265972,"gained":[19744411,19672898,19601616,19531800,19458727,19385263,19312314,19241566,19167497,19091320,19016287,18939405,18858986,18775523,18694314,18614667,18532641,18450698,18370224,18284328,18198986,18114452,18028123,17941590,17849003,17752725,17658081,17567114,17465087,17363747,17260069,17151743,17042763,16938723,16838151,16729784,16625746,16522241,16416405,16312188,16209636,16097587,15988881,15876815,15763540,15653290,15538338,15418933,15300324,15182061,15063759,14947796,14823490,14699879,14576771,14446463,14315992,14187969,14054550,13919528,13785470,13649131,13510518,13372871,13234670,13098472,12965103,12826386,12682222,12537735,12389310,12240822,12098926,11954646,11809366,11656063,11497090,11333291,11167562,10987853,10802134,10600510,10401310,10190114,9983095,9763367,9530931,9321679,9123704,8913308,8702014,8465828,8256953,8043565,7827597,7612626,7402818,7210414,7026104,6841493,6652960,6439530,6246435,6062803,5874491,5685077,5470191,5280669,5086015,4885053,4654165,4401415,4202462,4012989,3831795,3639669,3414524,3237290,3058025,2879716,2693281,2489783,2316763,2151316,1976329,1805031,1608673,1442893,1284729,1127379,1127379,1127379,1127379,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,68529,68529,68529,68529,223920,223920,223920,223920,441602,441602,441602,441602,703723,953238,1232111,1500892,1760294,1987955,2204381,2444395,2654848,2858722,3050148,3297970,3522851,3720298,3925111,4132916,4322951,4511137,4705131,4884131,5088888,5267651,5446710,5623571,5793511,5972093,6154455,6346924,6519386,6858474,7070390,7246893,7461679,7631958,7832849,8016583,8217536,8402438,8578700,8756696,8954202,9181445,9366001,9532249,9719455,9901988,10089448,10271785,10460267,10644018,10832008,11022805,11202651,11391409,11566612,11764864,11951125,12139883,12333850,12626866,12816274,12995498,13175071,13369366,13556997,13742447,14025137],"lost_b0":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1698578,1698578,1698578,1698578,1712671,1712671,1712671,1712671,1725496,1725496,1725496,1725496,1734845,1743180,1748445,1753315,1759090,1767647,1770696,1774953,1776868,1780328,1782479,1787931,1791527,1793336,1798125,1799724,1800675,1801135,1803858,1804190,1814923,1815566,1816787,1818429,1819046,1819687,1821178,1822843,1823956,2118459,2119836,2120815,2121461,2121791,2122858,2123155,2123493,2124362,2124662,2124964,2134001,2134415,2134521,2134556,2134830,2134847,2135226,2136646,2137090,2137809,2139740,2140820,2140820,2142045,2142199,2164577,2166585,2166923,2167704,2168339,2169154,2169377,2169546,2169832,2169936,2170350,2171395]},"doggerland":{"land":[340713,340471,340216,339941,339634,339261,338940,338566,338210,337889,337555,337221,336891,336551,336218,335875,335508,335072,334635,334195,333689,333199,332642,332083,331496,330829,330158,329429,328712,327903,326996,326027,325053,324050,323208,322413,321600,320756,319864,318891,317841,316717,315636,314399,313140,311853,310648,309367,307930,306323,304635,302557,300619,298430,296239,293829,291366,288595,285855,282671,279502,276197,273022,269717,266679,263441,260360,257318,254582,251801,249450,247123,245035,242923,240776,238687,236619,234467,232284,229769,227460,224666,220306,215282,210855,206480,201848,197263,192446,186751,180256,174164,168265,162745,157206,151551,145554,139200,131416,120798,105792,96811,91558,87021,82714,78019,73656,67898,61703,53294,42627,38884,36612,34646,32949,31245,29528,26904,24158,21569,19438,18212,17227,16349,15516,14600,13627,12424,10666,6998,6998,6998,6998,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"sea":341416,"box":{"lat0":51.0,"lat1":57.5,"lon0":-3.0,"lon1":9.0,"lon0_abs":3.0}},"europe":{"exposed":[1046475,1040655,1034929,1028955,1022744,1016295,1009881,1003113,996461,989974,983527,976986,970538,964049,957532,951002,944352,937391,930506,923740,917014,910189,903257,896142,889036,881874,874721,867361,860084,852634,844914,837271,829978,822736,815822,809050,802219,795163,788380,781529,774873,768468,762122,755622,749270,743010,736755,730312,723690,716701,709974,702965,696183,689305,682716,675812,668826,661413,654043,645924,638024,629600,621881,614046,606538,598855,591504,584229,577283,570275,563904,557557,551637,545806,540053,534429,528885,523231,517697,511665,505823,499200,489922,479429,469719,459866,449405,439846,430348,420007,409039,398601,388410,378524,368622,358487,347515,336472,324092,308940,289462,275877,266128,256889,247653,237830,227800,216649,204695,190231,173152,163616,155534,147903,140645,133696,126731,118809,110117,101390,93356,87197,81599,75897,70309,64907,59381,53946,47869,39423,39423,39423,39423,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},"uk":{"land":243391,"lost":[117,155,233,275,503,571,686,806,1672,1804,2029,2275,5773,7422,8994,10509,12057,13288,14540,15660,16776,17867,18993,20143,21310,22438,23519,24518,26196,27220,28306,29368,30387,31368,32393,33408,34414,35426,36437,37421,38711,39753,40806,41822,42865,43936,44961,45995,47018,48070,49146,50184,51217,52341,53421,54493,55559,56593,57702,58885,60086,61368,62554,63647,64756,65871,66939,67978,69046,70109,71198,72248,73494,74569,75621,76666,77711,79092,80180],"lost_b0":[563,564,573,574,576,576,576,582,588,588,589,598,1036,1039,1041,1041,1044,1044,1044,1044,1044,1044,1044,1053,1053,1054,1054,1054,1054,1054,1054,1054,1055,1055,1055,1055,1055,1055,1055,1055,1055,1055,1055,1055,1055,1055,1055,1055,1055,1055,1055,1055,1055,1055,1055,1055,1055,1055,1055,1055,1055,1055,1055,1055,1055,1055,1055,1055,1055,1055,1055,1055,1055,1055,1055,1055,1055,1055,1055],"below0":1055},"uk_towns":{"n":1426,"under":[0,0,0,0,0,0,1,4,4,5,5,6,8,22,39,61,76,100,131,153,179,207,225,247,269,291,309,331,351,367,386,401,411,425,433,441,454,467,480,498,509,518,534,542,551,565,571,579,592,604,618,629,634,654,663,671,675,682,688,697,703,713,721,728,733,738,745,748,755,767,777,787,796,803,810,818,827,837,840]},"msoa":{"pop_total":59597664,"under_pop":[15759,15759,15759,15759,15759,15759,15759,45276,110800,110800,135093,286131,755486,1096858,1924107,2645000,3478444,4208514,4824203,5517666,6172423,6742739,7456695,8101818,8742382,9299704,9905951,10589035,11198980,11863140,12327320,13005103,13591902,14004081,14428379,15061081,15601532,16325125,16918503,17586901,18200393,18975656,19529937,20073963,20713771,21301565,21798921,22205704,22655289,23076518,23569053,24016996,24545506,25310694,25822558,26305174,26807875,27220696,27717066,28342416,28679018,29131554,29467324,29924648,30295535,30828992,31141994,31599261,32006550,32401891,32707251,33041260,33389291,33897298,34296099,34620795,34988497,35421444,35905364]},"cities":{"n":34191,"under_n":[107,107,107,227,238,238,238,352,379,379,379,526,771,1088,1463,1877,2294,2749,3176,3563,3924,4274,4564,4896,5194,5450,5690,5925,6144,6352,6595,6799,7034,7221,7383,7572,7732,7920,8083,8240,8423,8653,8873,9009,9163,9290,9432,9585,9705,9845,9963,10097,10243,10433,10575,10675,10794,10919,11022,11128,11244,11368,11462,11555,11647,11756,11824,11925,12015,12107,12185,12273,12375,12458,12548,12623,12702,12769,12857],"under_pop":[4924867,4924867,4924867,19466949,20504811,20504811,20504811,30000050,41960264,41960264,41960264,56753718,85586491,134206164,176654675,233741535,307444387,381033898,446390646,534100066,631000704,675364371,723170344,791901307,868100450,894720976,927085431,957937143,990199313,1016628994,1053096936,1103396313,1146735774,1186611119,1207876366,1229014965,1245220401,1261781263,1291268351,1310023907,1335677033,1365406026,1406401666,1422276047,1434978341,1443957429,1473693303,1502732661,1515333848,1536340565,1547995234,1569780993,1592984396,1608541780,1623358097,1637925692,1647904597,1677283491,1692218597,1705942276,1717247480,1743919904,1751112597,1759985641,1776394198,1797017663,1807834413,1816503079,1830470885,1838381866,1843804843,1853075219,1861799037,1867686740,1873172816,1883649032,1889152296,1895205071,1905055332]},"bridges":[{"name":"Great Britain and continental Europe","at":-30.0},{"name":"Ireland and Great Britain","at":-38.0},{"name":"Beringia: Asia and North America","at":-43.0},{"name":"Sahul: New Guinea and Australia","at":-5.0},{"name":"Tasmania and mainland Australia","at":-23.0},{"name":"Sunda: Borneo and the Malay Peninsula","at":-35.0},{"name":"Sri Lanka and India","at":-1.0},{"name":"Taiwan and mainland China","at":-56.0}],"island":{"gb_continent":-30.0,"ie_gb":-38.0,"gb_continent_z4":-29.0,"ie_gb_z4":-41.0,"gb_continent_abs":30.0},"countries":[{"a3":"RUS","name":"Russia","land":16858772,"lost":[6053,6053,6053,6053,20779,20779,20779,20779,40372,40372,40372,40372,64393,84401,105046,129307,154471,176849,203481,228837,255349,278784,301357,333818,386278,416044,444611,474580,503365,533263,566656,593658,645919,671835,703452,732505,759835,792824,828540,874735,906783,1001812,1034971,1077628,1120549,1156641,1194324,1236404,1295219,1327246,1363389,1403457,1434358,1503868,1546313,1581399,1621344,1662407,1704013,1740549,1780022,1816545,1853287,1891893,1927121,1974756,2009543,2046086,2088575,2125270,2160241,2199652,2238776,2278646,2314403,2357235,2394930,2440987,2537360]},{"a3":"CAN","name":"Canada","land":10029391,"lost":[6621,6621,6621,6621,20628,20628,20628,20628,30716,30716,30716,30716,41871,52315,63477,74462,85753,97531,108739,120286,131665,143795,155611,168393,187441,198802,210955,223255,234858,245876,258450,269153,280525,291755,303439,315333,327085,339201,351249,372134,384538,395787,406728,416843,427267,437367,448017,459325,470004,480730,491990,502689,513115,533224,544300,554381,565073,576168,586005,595805,606519,617528,628266,639685,650718,661950,674195,688377,699629,711427,723134,735167,747026,757693,769152,781449,791630,802151,812443]},{"a3":"USA","name":"United States of America","land":9482335,"lost":[7852,7852,7852,7852,23692,23692,23692,23692,45805,45805,45805,45805,69077,91352,116977,146928,176183,201091,222110,241645,262986,285954,305323,322075,337101,353332,369026,390484,405704,421557,434443,447606,463111,476714,490352,504858,519553,531889,545770,556657,568048,581432,597306,611910,625205,638300,653641,665642,676772,689176,699585,711808,724188,737219,747714,759307,772581,781486,790857,800463,811466,823352,833070,841916,852169,862870,875645,886670,895984,905468,916515,927679,936612,946673,956398,966660,977258,987577,999548]},{"a3":"CHN","name":"China","land":9324838,"lost":[1718,1718,1718,1718,14048,14048,14048,14048,32250,32250,32250,32250,51192,74979,98729,115093,127398,139813,148856,167850,177735,186470,194882,203267,212461,219805,232109,240555,248852,257391,266944,277417,286956,296057,306278,315004,323764,332676,340672,349358,357250,364930,412766,421432,432184,440266,469816,482018,492053,501809,512452,521792,530830,537987,546852,554006,563477,571161,578083,585125,592233,599363,606690,614220,621094,627843,634497,641353,647399,653217,658423,665484,671724,677013,683198,688906,694240,699882,743083]},{"a3":"BRA","name":"Brazil","land":8553752,"lost":[2181,2181,2181,2181,6923,6923,6923,6923,15716,15716,15716,15716,27174,38385,52977,66622,79795,89837,99225,110242,119314,125811,133904,185358,194712,208495,218950,233998,245071,256924,272596,282363,290646,303794,314026,325367,335309,346325,356468,364622,374331,383917,394070,405385,427965,440213,453224,465235,480974,500018,518074,531874,550030,575128,599183,617899,640861,663636,682106,705643,728897,751722,774970,798078,824232,846639,867621,890630,910971,934277,955624,978098,1001776,1020202,1039031,1061544,1085805,1107553,1128319]},{"a3":"AUS","name":"Australia","land":7757275,"lost":[6761,6761,6761,6761,17024,17024,17024,17024,29296,29296,29296,29296,44089,57516,72536,87565,102081,114876,125967,139532,151605,162942,173667,185881,195454,207966,220333,230843,241208,249997,261865,272072,283705,294192,303899,313692,322400,332463,341633,351286,359400,368992,376670,385727,393840,403393,410960,421034,430298,445662,454269,461437,470449,477842,486985,495120,503865,510383,518532,527358,536358,545268,554809,562587,570226,578392,585746,592069,606811,614951,622937,630987,638365,647715,655461,664082,672974,681147,689794]},{"a3":"IND","name":"India","land":3132315,"lost":[2907,2907,2907,2907,7282,7282,7282,7282,15991,15991,15991,15991,30698,46588,63172,75641,85400,93349,100354,107525,113626,121430,127862,134222,140720,144780,151259,156531,161209,167108,171044,173827,178302,183183,187394,191446,196352,201668,205588,209909,214930,222151,226771,230686,235267,240476,243930,249240,254061,260057,265561,270372,276728,284169,289499,295395,302048,307319,312457,317677,323738,328403,333721,339607,346273,351078,356617,361660,367596,373661,379758,385503,391478,397235,402908,407889,413333,419759,425044]},{"a3":"ARG","name":"Argentina","land":2800150,"lost":[567,567,567,567,4421,4421,4421,4421,8822,8822,8822,8822,18412,24024,30281,37572,43421,48028,51087,56632,59717,63891,67092,70567,73746,78083,82227,86096,90149,93434,97458,101725,106927,111394,115866,119667,124993,129265,134382,139500,143240,147280,152374,156659,161449,165135,169630,174573,179236,184073,188334,193048,197330,201912,206983,212221,216762,222685,229447,234000,239873,244831,251894,257464,265143,273021,281224,292145,302058,313970,325242,335648,347854,359235,370937,383529,396970,408709,422536]},{"a3":"KAZ","name":"Kazakhstan","land":2525942,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,86263,90060,91538,93887,95510,97355,98651,99415,101323,102458,103661,104466,105187,106043,107483,108343,109368,110753,111558,112479,113651,117006,118427,119067,120086,120967,121972,122990,124060,125045,175755,178898,181983,184253,187379,190369,192568,195702]},{"a3":"DZA","name":"Algeria","land":2316615,"lost":[0,0,0,0,63,63,63,63,186,186,186,186,372,433,433,433,556,556,617,926,926,1050,1050,1111,1174,1174,1298,1420,1483,1546,1607,1854,1915,1915,1915,1976,2037,2100,2100,2409,2470,2470,2532,2656,2656,2778,2839,2839,2839,2902,2963,3025,12521,12781,13112,13634,14212,14731,14993,15124,15256,15584,15715,16037,16366,16953,17204,17333,17466,18185,18441,18830,19225,19291,19424,19824,20550,20872,21649]},{"a3":"COD","name":"Dem. Rep. Congo","land":2311620,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,95,189,189,661,661,661,661,661,661,661,661,661,661,661,756,756,756,756,851,851,851,945,945,945,945,1040,1040,1040,1134,1229,1229,1229,1229,1229,1323,1323,1323,1323,1323,1323,1323,1418,1418,1418,1418,1418,1418,1418,1418,1418,1418,1418,1418,1418,1513,1607,1607,1607,1607,1607,1607,1607,1607,1607,1607,1607,1702]},{"a3":"GRL","name":"Greenland","land":2168484,"lost":[158,158,158,158,512,512,512,512,849,849,849,849,1235,1577,1991,2451,2905,3409,3813,4277,4771,5276,5601,6164,6851,7177,7608,8095,8543,9010,9535,10101,10496,11114,11579,12163,12649,13095,13533,14236,14945,15633,16187,16689,17326,17844,18440,19013,19621,20260,20811,21307,21759,22369,22886,23513,23938,24311,24872,25346,25849,26420,26847,27318,27781,28203,28621,29123,29544,30087,30627,30982,31573,32073,32575,33022,33474,33918,34385]},{"a3":"IDN","name":"Indonesia","land":1981477,"lost":[3137,3137,3137,3137,10535,10535,10535,10535,21937,21937,21937,21937,36373,49179,71413,98665,125759,148833,167449,186622,202463,217288,234942,250048,265907,284238,300860,323119,340589,359417,378233,398363,414604,433041,448628,464587,478749,491206,511889,524338,535367,548023,558859,569114,580712,591456,599632,608662,622755,635601,644338,653366,662198,670470,679311,686537,693376,700888,708300,716957,725325,731504,738539,746332,754032,761263,767537,776203,782573,789036,797210,802349,809102,815478,820038,828042,833655,839174,844783]},{"a3":"MEX","name":"Mexico","land":1981059,"lost":[1545,1545,1545,1545,7480,7480,7480,7480,16415,16415,16415,16415,25209,33240,43831,51715,61728,69603,77509,84484,90629,95440,101761,107722,113627,120388,126231,130865,135856,139868,144343,149111,153772,159931,164267,170656,175110,182717,187273,192176,196993,200771,204440,207151,211342,214085,217752,220625,223329,225618,228202,230272,232335,235349,238431,240876,242923,245534,248058,251685,253861,255912,258234,260429,262521,264753,266892,268942,271288,273222,275071,276747,278778,280731,282979,285178,287399,288926,290927]},{"a3":"SAU","name":"Saudi Arabia","land":1932013,"lost":[310,310,310,310,809,809,809,809,3805,3805,3805,3805,6107,7985,9411,11404,13149,14090,15857,17054,18675,20065,21040,22061,22940,24142,25358,26702,27973,28752,29222,29708,30331,31614,32329,33274,34168,34974,35680,36464,37012,37638,38434,39504,40934,42199,42979,43523,44149,45910,46691,47494,48288,48994,49559,50508,51138,52019,52927,54136,54857,55495,56447,57325,58425,59227,60193,61153,61702,62419,62908,63714,64277,65225,66332,67117,68066,68698,69095]},{"a3":"SDN","name":"Sudan","land":1863532,"lost":[0,0,0,0,931,931,931,931,1015,1015,1015,1015,1355,1779,2122,2630,3049,3387,3387,3387,3559,3818,3984,3984,4237,4492,4661,4661,4914,5083,5249,5335,5419,5590,5676,5676,5928,6095,6264,6348,6348,6520,6605,6777,6947,6947,7118,7456,7456,7456,7456,7792,7877,7877,7960,7960,8045,8045,8045,8045,8215,8472,8644,8727,8898,8898,8898,8898,8980,9066,9152,9235,9235,9235,9319,9402,9402,9402,9402]},{"a3":"IRN","name":"Iran","land":1616416,"lost":[76,76,76,76,2399,2399,2399,2399,6674,6674,6674,6674,10076,13186,15355,18559,20887,23662,25839,28023,29326,31334,33086,34776,35740,37297,37981,39066,40353,41892,42544,42987,43856,44669,45465,46203,46868,48352,48930,49428,50441,54589,55662,56673,57261,57586,58525,59626,60026,61173,61740,62229,62940,63599,63865,64737,65176,65397,65961,66454,67165,67234,67820,68253,68963,69504,69855,70383,70930,71363,71573,71917,72255,72521,72748,73100,73381,73942,74214]},{"a3":"LBY","name":"Libya","land":1604778,"lost":[204,204,204,204,760,760,760,760,1106,1106,1106,1106,1803,2147,2633,3191,4016,4225,4710,4991,5410,5619,5831,6038,8743,9165,13960,14811,15595,16783,17629,18763,19969,20756,21463,22449,23299,24351,25130,25980,27031,28023,28952,29664,31089,32013,32516,33578,34556,35480,36831,38112,39036,40251,41448,42512,43708,44560,51957,53879,56091,57089,58739,61612,62681,64666,66869,68430,69847,70980,71683,72741,74032,75107,76597,79060,80274,81992,83696]},{"a3":"MNG","name":"Mongolia","land":1564750,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"a3":"AGO","name":"Angola","land":1281404,"lost":[0,0,0,0,0,0,0,0,88,88,88,88,88,183,183,366,647,1011,1100,1287,1381,1563,1745,1925,2012,2658,3033,3127,3863,4146,4523,4805,5167,5260,5915,6008,6284,6472,6657,7119,7300,7671,8322,8416,8509,8973,9067,11575,11856,12415,12601,12880,12975,13351,13723,13812,14281,14555,14741,15114,15114,15669,16119,16393,16668,16850,17594,17782,18617,18989,19448,19822,20010,20190,20748,20748,21119,21212,21493]},{"a3":"PER","name":"Peru","land":1278221,"lost":[279,279,279,279,562,562,562,562,1224,1224,1224,1224,1506,1785,1973,2068,2162,3107,3485,3955,4522,4993,5273,6120,6677,7241,7608,7703,7797,7891,8451,8830,8924,9387,9387,9576,10042,10320,10603,10886,11345,11621,11810,11810,11995,12176,12637,12915,13481,13575,13954,14144,14326,14610,14887,15070,15347,15441,15535,15630,15724,15819,16095,16379,16750,16938,17028,17494,17778,18150,18703,18984,19077,19267,19551,19643,19923,20105,20389]},{"a3":"TCD","name":"Chad","land":1275428,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"a3":"MLI","name":"Mali","land":1236633,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,179,179,179,179,179,358,358,358,358,805,895,984,1074,1163,1163,1253,1253,1342,1611,1700,1789,1789,1789,1879,1879,2505,2863,3131,3310,3578,3578,3757,4025,4114,4114,4382]},{"a3":"ZAF","name":"South Africa","land":1212871,"lost":[0,0,0,0,218,218,218,218,417,417,417,417,893,1094,1230,1502,1926,2274,2700,3124,3736,4090,4509,5123,5457,5868,6236,6452,6739,6944,7090,7663,8074,8432,8695,8966,9316,9738,10090,10702,11052,11390,11942,12007,12567,12921,13061,13194,13669,14174,14736,14935,15215,15554,15777,16183,16535,16945,17373,17640,17982,18255,18321,18663,19003,19632,20050,20342,20769,21542,22018,22223,22565,22762,22909,23123,23461,23662,24249]},{"a3":"NER","name":"Niger","land":1202082,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"a3":"COL","name":"Colombia","land":1144552,"lost":[185,185,185,185,1022,1022,1022,1022,1392,1392,1392,1392,2420,3351,5123,6893,8015,9413,10720,11943,13258,14105,15701,17845,18783,19993,20739,22058,22716,23938,24875,25719,27019,28047,29164,29728,31123,32341,33375,34596,35439,36094,36470,37966,57182,59151,60271,61020,62707,64020,65797,66545,68047,68890,70188,70933,72243,73275,74587,75424,77480,79249,80552,81862,82799,84114,85517,86454,87576,91448,92481,93698,95200,96323,96976,98752,99969,101468,102494]},{"a3":"ETH","name":"Ethiopia","land":1100566,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1357,1357,1448,1538,1538,1628,1719,1809,1809,1809,2081,2081,2262,2352,2533,2533,2533,2533,2533,2533,2623,2623,2623,2713,2713,2713,2713,2713,2804,2895,2986,2986,2986,3076,3257,3257,3348,3348,3438,3438,3438,3438,3438,3438,3618,3618,3709]},{"a3":"BOL","name":"Bolivia","land":1069624,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"a3":"MRT","name":"Mauritania","land":1057971,"lost":[1360,1360,1360,1360,2128,2128,2128,2128,3242,3242,3242,3242,5217,6947,7891,9702,11431,13147,15130,16251,18326,19961,20736,21862,24462,25751,26782,28415,30301,32562,34289,35506,36721,37931,40258,41552,42939,44321,46052,47943,49843,50881,53327,55130,56508,58580,60485,62134,63257,65160,67405,69056,72252,75713,77799,80228,82836,84921,87253,90202,92710,95560,98600,100943,102421,105800,108220,110221,111425,113595,115658,116609,119471,120767,122228,124040,124991,126125,127163]},{"a3":"EGY","name":"Egypt","land":987494,"lost":[701,701,701,701,2893,2893,2893,2893,6194,6194,6194,6194,8587,11000,12646,14499,16286,17636,18777,19938,21378,22673,23457,25242,26092,26823,27615,27980,28487,28840,29718,30515,30967,32339,33152,35828,36401,37700,38366,38938,39740,40911,41635,42085,42889,43252,44037,44914,45426,45782,46454,47261,47865,48294,48520,49240,49752,50060,50782,51713,52288,52569,53840,54284,54570,55154,55947,70116,70695,71818,72472,73133,74235,74886,75986,76986,77573,78017,78659]},{"a3":"VEN","name":"Venezuela","land":948666,"lost":[830,830,830,830,2586,2586,2586,2586,3785,3785,3785,3785,7586,9713,12214,13787,15916,17215,19157,33954,37391,40179,43055,46214,49466,53371,57652,60627,62950,64620,66290,67591,68799,69542,71498,72431,73543,74192,75024,76415,77341,78641,79568,81434,82637,83567,92371,94890,97130,98999,101707,103203,104885,106849,107878,110211,113106,115067,117683,118804,122450,125351,130793,133693,136494,139113,141826,145198,147818,151470,155218,157742,160919,164100,168404,171588,176930,179459,183862]},{"a3":"TZA","name":"Tanzania","land":940727,"lost":[0,0,0,0,657,657,657,657,844,844,844,844,1312,1877,2251,2626,3097,3472,4131,4506,5445,5631,6195,6663,6852,7320,7792,8167,8544,8824,9294,9671,9955,10423,10800,10895,11084,11365,12022,12491,12866,13242,13336,13991,14366,14460,14742,15118,15400,15494,15776,16058,16433,16898,17086,17274,17742,18118,18590,18964,19151,19339,19621,19714,20091,20091,20185,20562,20843,21031,21593,21874,21969,22251,22438,23003,24031,24499,24874]},{"a3":"NGA","name":"Nigeria","land":900071,"lost":[283,283,283,283,568,568,568,568,945,945,945,945,1987,2934,5301,7858,11082,13545,18751,20265,22347,24901,26414,28497,30674,32663,34933,37396,39290,41561,43738,45157,46765,47900,49034,50548,51681,53661,54796,56023,57155,57628,58476,59044,59988,60272,60650,62351,63011,63389,63484,66693,68108,69430,70564,71413,71980,72736,73396,73680,74340,75568,76228,77267,78495,78778,79438,79910,80855,82081,82930,83496,84156,84439,85006,85856,86329,87179,87650]},{"a3":"PAK","name":"Pakistan","land":882136,"lost":[636,636,636,636,1746,1746,1746,1746,7062,7062,7062,7062,11814,14345,17184,19466,21750,23799,26701,28981,31333,33837,35402,37279,39312,41029,43061,44854,46177,47421,48200,49673,51147,53246,54335,55891,56983,58143,59072,60011,62101,63580,64510,65129,66450,67990,69304,70696,72238,74096,76097,77942,80161,82143,83978,86032,88770,91511,93497,95387,97504,100091,101993,104204,106098,109426,111785,114575,116457,118661,120850,122818,124857,127258,128922,131254,132608,134187,135914]},{"a3":"MOZ","name":"Mozambique","land":816055,"lost":[352,352,352,352,1383,1383,1383,1383,2914,2914,2914,2914,6006,10218,16735,20776,24450,27300,28898,31065,32730,34680,36499,37417,39107,40525,42005,43678,45004,45913,47079,48673,50333,51508,53773,55439,56924,58879,60212,61813,63159,64467,65550,66868,68488,69912,73003,74841,76087,77485,79160,80318,81145,83600,86014,87014,88102,89623,91246,93751,95007,97105,99600,101883,106601,108916,110912,113043,114913,117815,119221,121128,123699,124857,127588,129165,131238,132949,135469]},{"a3":"NAM","name":"Namibia","land":812124,"lost":[0,0,0,0,232,232,232,232,314,314,314,314,643,893,893,1054,1224,1386,1466,1546,1952,2034,2034,2521,2690,2773,2860,3178,3178,3178,3430,3587,3829,3915,3915,4245,4324,4400,4714,4794,4962,5041,5124,5280,5355,5355,5515,5750,5829,5829,5913,6164,6409,6658,6904,6979,7061,7145,7145,7145,7312,7390,7470,7789,8032,8032,8186,8432,8675,8675,8844,9085,9245,9408,9483,9809,9809,9966,9966]},{"a3":"TUR","name":"Turkey","land":785654,"lost":[110,110,110,110,999,999,999,999,1346,1346,1346,1346,2072,2602,3183,3660,4060,4779,5073,5486,5894,6398,6626,6964,7192,7314,7719,8114,8409,8699,9143,9318,9487,9764,10149,10373,10879,11177,11473,11920,12260,12436,12599,12884,13161,13402,13633,14020,14410,14865,14980,15259,15259,15540,15948,16118,16285,16457,17287,17905,18573,18795,18905,19076,19252,19590,19872,20268,20713,22516,22739,24712,25048,25609,25786,26076,26352,26689,26921]},{"a3":"CHL","name":"Chile","land":767007,"lost":[253,253,253,253,952,952,952,952,1612,1612,1612,1612,2266,3020,3721,4558,5140,5617,6461,7103,7996,9057,9708,10341,10941,11626,12533,13473,14208,14789,15233,15720,16347,17046,17457,18081,18706,19289,20018,20844,21504,22112,22891,23651,24337,24844,25133,25669,26256,27040,27728,28373,29133,29692,30629,31117,31429,31885,32486,32920,33868,34509,35274,35746,36419,37145,37856,38553,39004,39653,41139,41736,42133,42768,43676,44385,44833,45464,45952]},{"a3":"ZMB","name":"Zambia","land":759265,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"a3":"MMR","name":"Myanmar","land":702733,"lost":[791,791,791,791,2980,2980,2980,2980,4644,4644,4644,4644,7963,15511,26660,32610,36718,40007,43762,46541,49689,52557,54554,57535,59354,60829,62663,64684,65912,67038,69063,70123,71632,72330,73471,74614,75831,76812,78024,79327,80020,81157,82551,83332,84562,85886,86755,88064,88862,89829,90450,91839,92271,92978,93852,94643,94997,95438,95786,96300,97345,97693,98561,99180,99703,100137,100747,101784,102225,102576,102755,104040,104736,105363,105884,106944,107637,108069,108502]},{"a3":"AFG","name":"Afghanistan","land":658057,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"a3":"FRA","name":"France","land":627125,"lost":[138,138,138,138,1210,1210,1210,1210,2703,2703,2703,2703,3845,4858,6054,7926,8735,9973,11089,12152,12721,13952,14810,15715,16430,17205,18025,19082,19958,21777,22909,24155,25304,26813,28133,29521,30893,32112,33068,34043,35357,36022,36824,37990,39615,40946,42158,43307,43982,45435,46323,47591,50017,51453,52647,54710,55863,56978,58334,59510,60696,62778,64312,65617,67142,68126,70133,71105,72959,74364,75595,77102,78346,80117,82689,83579,85322,86644,89048]},{"a3":"CAF","name":"Central African Rep.","land":622342,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"a3":"SDS","name":"S. Sudan","land":615055,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"a3":"MDG","name":"Madagascar","land":604076,"lost":[85,85,85,85,947,947,947,947,2587,2587,2587,2587,4101,5699,6982,8675,10373,12082,13979,16220,17877,19376,20313,22362,24175,25283,26745,28636,29932,31745,33485,35038,36062,37671,38894,40084,41638,42407,43507,45199,46047,46978,48249,49451,50909,52023,53139,54143,55507,56627,57835,58959,62380,63577,64677,65518,66892,67894,69441,72334,73116,73971,75155,76265,77724,78244,79352,80373,81236,82504,83431,84200,85588,86545,90811,91574,92264,93376,95092]},{"a3":"KEN","name":"Kenya","land":592464,"lost":[0,0,0,0,0,0,0,0,858,858,858,858,1525,2193,2670,3146,3622,4003,4385,4575,4956,5051,5147,5528,6005,6195,6767,7338,7720,8197,8292,8483,9246,9531,9817,10008,10294,10675,10771,11343,11724,12201,12392,12869,13250,13537,14109,14109,14396,14586,14968,15159,15539,16016,16302,16302,16779,17161,17447,17733,18019,18401,18878,18878,18973,19546,19832,20022,20499,20499,21072,21358,21549,21930,22407,22598,22598,22884,23457]},{"a3":"BWA","name":"Botswana","land":590685,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"a3":"MAR","name":"Morocco","land":579523,"lost":[0,0,0,0,69,69,69,69,133,133,133,133,278,500,500,713,795,1274,1726,2106,2707,3000,3279,3711,4023,4316,4611,4970,5543,5892,6184,6610,6942,7178,7751,7971,8110,8609,8963,9180,9406,9810,10048,10426,11011,11301,11448,11675,12109,12335,12795,12948,13404,13757,14248,14458,14588,14823,15314,15619,15851,16355,16950,17617,17779,18018,18681,19047,19496,19783,19927,20320,20554,20821,21125,21433,21733,22117,22253]},{"a3":"UKR","name":"Ukraine","land":555996,"lost":[457,457,457,457,1374,1374,1374,1374,2062,2062,2062,2062,2978,3978,4889,5528,6532,7262,7716,8354,8990,9985,10800,12021,12518,13200,14014,14969,15830,16651,17330,17920,18459,19143,20269,21038,21896,22847,23935,24612,25522,26649,27324,28050,31435,32154,33226,33812,34840,35785,36730,37797,38691,39095,39675,40439,41193,42346,43418,43997,44842,45776,46265,47112,47687,48755,49512,50221,51245,52216,53061,53682,54654,55540,56604,57615,58581,59333,60263]},{"a3":"THA","name":"Thailand","land":526225,"lost":[650,650,650,650,1205,1205,1205,1205,2866,2866,2866,2866,5889,11700,18224,24219,26764,28771,31050,33065,35342,38085,39824,42210,44117,45223,46957,48345,49910,51103,52938,53676,54953,56872,58344,59623,60797,62168,63803,65357,67276,68992,69898,70802,72276,74081,75159,76518,77709,79506,81307,82840,83754,86080,87516,88779,90313,91652,92463,93641,94453,96519,98145,100498,101583,102844,104019,105277,106618,107067,107784,108962,110330,111856,113040,114289,115182,116533,117709]},{"a3":"ESP","name":"Spain","land":509502,"lost":[282,282,282,282,745,745,745,745,1097,1097,1097,1097,1202,1482,3050,3659,4011,4603,4775,5186,5599,6048,6831,7227,7809,7919,8269,8692,8871,9292,9573,10148,10392,10620,10908,11206,11678,12322,12430,12982,13771,14235,14524,14763,15061,15567,15972,16268,16436,16965,17425,17953,18233,18401,18627,18855,19476,19658,19959,20432,20667,21120,21590,21823,22069,22557,22919,23036,23284,23585,23585,23779,24236,24468,24643,24990,25274,25455,25750]},{"a3":"PNG","name":"Papua New Guinea","land":491620,"lost":[191,191,191,191,1502,1502,1502,1502,2065,2065,2065,2065,3751,4971,6937,8156,11057,12273,13950,15825,17887,22425,26272,30220,33228,36515,39980,43915,52457,56399,59302,63526,67472,70010,72824,77812,80155,83160,85603,88799,91900,94530,96786,99037,102141,105155,108538,110987,113614,116051,117750,119345,121701,124148,125936,127250,129130,131669,133835,135433,136469,138537,140895,142307,143626,145604,147297,148709,150128,151069,151918,153987,155681,157095,158983,160018,161905,163036,165105]},{"a3":"CMR","name":"Cameroon","land":484561,"lost":[95,95,95,95,190,190,190,190,190,190,190,190,380,570,665,950,1140,1330,1710,1900,2470,3040,3325,3420,3705,3705,3990,3990,4180,4275,4275,4466,4941,5036,5416,5606,5606,5701,5986,6366,6747,7032,7126,7602,7887,7887,7887,7982,8267,8648,8838,9028,9219,9409,9409,9504,9694,9979,9979,10169,10169,10265,10645,10645,10740,10930,11120,11405,11500,11500,11595,11595,11595,11595,11880,12070,12260,12260,12830]},{"a3":"SOM","name":"Somalia","land":473071,"lost":[95,95,95,95,662,662,662,662,1136,1136,1136,1136,1801,2750,3223,3697,4451,5402,6067,6925,7879,9117,10261,11880,13115,14161,17017,18159,19680,21299,23112,24543,25781,27687,29021,30452,32833,34167,35694,37794,39600,40935,42747,44363,45791,47124,48746,50081,51512,52085,53516,54276,56369,57515,59792,61027,62453,64164,64928,66739,67885,68930,69690,71215,72635,73684,74925,75971,77686,79014,79777,80539,81778,83011,83678,85206,86350,87492,88345]},{"a3":"YEM","name":"Yemen","land":463592,"lost":[180,180,180,180,358,358,358,358,986,986,986,986,1433,1882,2331,2599,2960,3320,3769,4127,4484,5024,5559,6184,6455,7174,7445,7714,8073,8521,8968,9327,9776,10224,10853,11577,11849,12474,12742,13097,13546,13636,14081,14263,14533,14622,14711,14981,15343,15523,16061,16241,16331,16419,16508,16688,16958,17316,17496,17762,18118,18655,19014,19192,19549,19729,19820,20177,20354,20530,20711,21342,21430,21694,21783,22055,22323,22413,22680]},{"a3":"TKM","name":"Turkmenistan","land":458903,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,11431,11723,12294,12692,12925,13551,14344,14743,14916,15476,16331,17283,17682,18481,19166,19906,20814,21725,25092,26800,27820,29432,30623,31709,33014,33984,35398,36313,37502,52390,55658,58063,60416,62666,64480,66519,68604,71139]},{"a3":"SWE","name":"Sweden","land":452895,"lost":[168,168,168,168,1054,1054,1054,1054,2034,2034,2034,2034,3046,4210,5558,6739,7750,8989,10023,10899,11931,13153,13728,14739,15863,16774,17702,18831,19826,20895,21967,25123,25989,26609,27601,28891,29992,31129,32103,33299,34435,35546,36644,38083,39218,40250,41058,42783,44895,46068,47144,48506,49408,50246,51190,52193,53540,54645,55784,56553,57308,58058,58865,59657,60547,61293,62135,63034,64053,64862,65882,73931,74868,75746,76769,77648,78510,79399,80246]},{"a3":"IRQ","name":"Iraq","land":431004,"lost":[0,0,0,0,72,72,72,72,783,783,783,783,8729,11611,14691,18189,21949,27003,31208,33620,36039,38385,40796,43955,46710,48154,49945,52208,54401,56327,58449,60358,62484,64525,66498,68139,69696,71732,72891,74518,77350,78980,80466,81685,82835,84116,86456,88263,89798,90533,91539,92819,93964,95177,95910,97048,97457,98527,99667,100139,101211,101811,102685,103506,104377,105123,105787,106648,107448,107783,108594,111622,112232,113368,114110,114517,115054,115594,116398]},{"a3":"UZB","name":"Uzbekistan","land":427052,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4800,54729,56102,57838,58962,60036,61421,62699,63878]},{"a3":"PRY","name":"Paraguay","land":416676,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,75,75,151,151,302,908,1212,1896,3031,4564,6859,9077,10764,12137,13280,14202,18019,20116,21583,23853]},{"a3":"NOR","name":"Norway","land":404151,"lost":[140,140,140,140,659,659,659,659,1036,1036,1036,1036,1430,1846,2326,2638,3107,3445,3914,4376,4830,5573,6088,6420,7012,7483,7968,8559,8972,9391,9893,10314,10683,10945,11424,11823,12299,12736,13262,13624,14373,14565,14960,15396,15976,16366,16684,16989,17389,17793,18142,18556,19188,19376,19908,20384,20794,21208,21608,21946,22208,22493,22950,23308,23599,24019,24276,24648,25029,25489,25888,26420,26869,27655,28204,28717,29147,29564,29969]},{"a3":"ZWE","name":"Zimbabwe","land":392102,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"a3":"JPN","name":"Japan","land":388622,"lost":[291,291,291,291,1383,1383,1383,1383,2484,2484,2484,2484,3986,5870,7732,8828,10685,13047,14834,17018,19041,20331,21764,23352,25356,26721,27976,29771,31684,33343,34812,36531,37732,39226,40439,41793,43306,44750,46499,47861,48555,50160,51020,52194,52920,53928,55196,56601,57536,58460,59553,60614,61887,62833,63996,64697,65773,66745,67891,68755,69986,70910,72350,73113,74290,75080,75619,76630,77486,78547,79101,79837,80461,81301,82201,82950,83598,84019,84482]},{"a3":"DEU","name":"Germany","land":347661,"lost":[1179,1179,1179,1179,2077,2077,2077,2077,3242,3242,3242,3242,3972,4915,6368,7434,8563,10020,11782,12910,14008,15006,16173,17012,18732,20067,21049,22297,23406,24537,25657,27015,28236,29763,30516,31577,32643,33425,35632,37080,38885,40547,42224,44475,46308,47998,50558,52506,54156,55682,57206,59202,61623,63122,65142,66823,68849,70447,71455,72650,74085,76002,77679,79019,80456,81801,83024,84283,85349,86516,87461,89490,90906,92784,93698,94730,95502,96743,98237]},{"a3":"MYS","name":"Malaysia","land":342698,"lost":[1229,1229,1229,1229,2650,2650,2650,2650,3884,3884,3884,3884,5688,7397,10052,12617,15180,17174,19454,22020,25634,28676,31902,34089,37418,40462,42651,45599,49116,51778,53392,56811,60045,61753,63940,65273,67079,69264,71357,75160,77535,80008,82004,83621,84667,86760,88278,90084,91697,92743,93884,95215,96926,97876,99494,100159,102060,103583,105678,106914,108053,109289,110715,111476,112141,113378,113948,114519,114614,115564,116609,116703,120986,121842,122889,124221,125173,126313,127644]},{"a3":"FIN","name":"Finland","land":341068,"lost":[202,202,202,202,491,491,491,491,1207,1207,1207,1207,1779,2628,3332,3946,4895,5526,6541,7467,8359,8891,9635,10375,11216,11981,13031,13579,14382,14949,15721,16223,16874,17544,18266,18877,19359,20026,20525,21312,21819,22427,23119,23904,24408,24962,25608,26031,26673,27512,28026,28588,29137,30087,30896,31668,32587,33323,34542,35557,36122,36765,37498,38217,39127,40062,40626,41289,42010,42815,43458,44126,44800,45385,46367,46815,47547,48087,48972]},{"a3":"COG","name":"Congo","land":325954,"lost":[0,0,0,0,95,95,95,95,95,95,95,95,95,95,95,95,190,190,285,380,380,475,665,760,760,854,854,854,854,1139,1139,1329,1424,1614,1614,1709,1709,1709,1994,1994,1994,2089,2184,2279,2374,2564,2659,2659,2659,2659,2659,2659,2754,2849,3039,3039,3229,3229,3229,3799,3894,3989,4084,4274,4274,4274,4274,4274,4369,4654,4654,4748,5033,5319,5319,5413,5509,5509,5604]},{"a3":"VNM","name":"Vietnam","land":323655,"lost":[1518,1518,1518,1518,7847,7847,7847,7847,26779,26779,26779,26779,41459,47961,51540,53805,55976,58305,59680,61406,62855,63793,65364,65887,66931,67903,68780,70006,70794,71856,72644,74309,74487,75272,75812,76784,77490,78278,79147,79848,80118,80657,81436,82123,82638,83153,83153,83418,84021,84459,85156,85852,86639,87062,87493,88135,89000,89609,90224,90742,91980,92604,93231,93415,93688,94194,95151,95859,96197,96473,97002,97507,97691,98228,98673,99466,99985,100415,100775]},{"a3":"CIV","name":"Côte d'Ivoire","land":322357,"lost":[0,0,0,0,379,379,379,379,664,664,664,664,948,1706,2274,3032,3222,3696,3885,4075,4454,4644,4928,5212,5307,5686,5876,5970,6255,6350,6634,6729,7581,7771,7961,8624,9855,9949,10139,10328,10612,10897,11275,12412,12790,13170,13454,13643,14117,14685,14970,14970,15159,15538,15632,16200,16958,17336,18188,18378,18946,19324,19987,20082,20082,20271,20555,21123,21690,22069,22353,22637,23488,23772,24719,25002,25192,25475,25854]},{"a3":"PHL","name":"Philippines","land":319745,"lost":[642,642,642,642,2029,2029,2029,2029,3121,3121,3121,3121,4133,5329,7426,8793,10167,12244,14163,15641,17484,20284,22204,23671,25658,26938,28758,32731,34005,35386,36870,38342,40426,41954,43972,45974,46890,48711,49969,50694,52236,52879,54145,55256,57428,59249,60708,61798,63694,65149,66699,68780,70802,72069,73606,74989,75352,76081,77899,78531,79441,82298,83380,84200,85567,86657,87666,88862,89962,90950,92127,93235,94145,95058,96252,96886,97976,99075,100166]},{"a3":"POL","name":"Poland","land":317951,"lost":[96,96,96,96,356,356,356,356,685,685,685,685,983,1214,1345,1710,1875,1941,2038,2265,2399,2564,2760,2890,3153,3385,3548,3916,4084,4117,4317,4484,4748,5322,5688,5754,6116,6445,6911,7074,8703,9204,9569,10069,10302,10665,11060,11464,11806,12040,12620,13056,13363,13988,14223,14796,15095,15633,16311,16918,17091,17636,18145,18551,18933,19337,19916,20741,21190,22295,23004,23921,24514,25499,26296,26952,27610,28224,29192]},{"a3":"OMN","name":"Oman","land":308440,"lost":[335,335,335,335,934,934,934,934,2003,2003,2003,2003,2587,3087,3419,3756,4169,4761,5091,5422,5762,6005,6249,6832,7000,7501,7586,7919,8168,8498,8908,9073,9406,9813,9974,10388,10642,11227,11562,11808,11808,11971,12220,12544,12710,13039,13290,13790,14036,14195,14699,15284,15876,16373,16623,16959,17213,19388,19812,20230,20648,20901,21152,21405,21821,22150,22317,22735,23150,23402,23821,24485,24736,25065,25229,25311,25645,25889,26385]},{"a3":"ITA","name":"Italy","land":300973,"lost":[165,165,165,165,1358,1358,1358,1358,2698,2698,2698,2698,3783,4583,5781,6646,7916,9005,9892,10388,11371,12278,13378,14004,15047,15800,16597,17376,18171,19573,20674,21832,22322,23117,24160,24934,25621,26216,27305,27724,28480,28808,29489,29808,30750,31610,32233,33018,33678,34150,34504,35148,36093,37257,38097,38594,39380,40089,40772,41443,41969,42210,42631,43308,43826,44182,44656,44991,45357,45984,46701,46969,47176,47420,48096,48605,49546,49909,50278]},{"a3":"BFA","name":"Burkina Faso","land":284187,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"a3":"NZL","name":"New Zealand","land":282369,"lost":[317,317,317,317,958,958,958,958,1663,1663,1663,1663,2620,3091,4060,5029,6006,6685,7206,7846,9075,9788,10398,10962,11731,12124,13196,13748,14048,14732,15238,15922,16323,17032,17580,17934,18795,19143,20050,20745,21585,22312,22830,23339,23676,24310,24551,25076,25529,27303,27643,28348,28849,29297,29640,30332,30932,31521,32369,33195,33810,34788,35470,36022,36716,37202,37688,38240,38978,39200,39462,40453,41128,41618,42130,42581,43601,44024,44725]},{"a3":"GAB","name":"Gabon","land":274212,"lost":[95,95,95,95,95,95,95,95,191,191,191,191,382,572,859,1336,1621,1717,1908,2767,3435,4962,5917,6393,7062,7729,8683,9161,9447,9829,10593,11166,11834,12788,13074,13647,14029,14315,14983,16606,16988,17560,18610,19469,19851,20424,20996,21568,22141,22427,23095,23858,24717,25290,26149,27008,27868,28345,28536,28918,29872,29967,30444,31208,32162,32544,33308,33690,34358,35026,35790,36363,36936,37413,37604,38177,38177,38654,39036]},{"a3":"ECU","name":"Ecuador","land":261469,"lost":[0,0,0,0,191,191,191,191,286,286,286,286,1335,2289,3434,4579,5628,6200,7059,8108,8680,9253,9920,10588,10588,11161,12210,12877,13163,13354,14022,14690,15071,15453,15739,16025,16311,16693,17170,17647,17838,18029,18315,18601,19079,19174,19460,19651,19747,20319,20415,20605,20796,21369,21464,21655,22132,22705,22895,22991,23277,23468,23850,24422,24422,24422,24518,24804,25186,26236,26523,26714,26714,27096,27286,27382,27668,27955,28146]},{"a3":"GBR","name":"United Kingdom","land":255975,"lost":[271,271,271,271,1349,1349,1349,1349,3105,3105,3105,3105,5073,6706,8234,9784,10606,11739,12945,13926,15199,16466,17369,18333,19392,20198,24400,25391,26378,27807,28970,30681,31901,32794,33931,35090,36072,37114,38166,38953,40528,41612,43114,44294,45376,46319,47486,48384,49334,50563,51636,52686,53789,54803,55831,56565,57477,58574,61567,63148,64497,65771,66573,67660,69190,70681,71688,72724,73541,74741,76137,77201,78627,79607,80662,81708,82935,83900,85115]},{"a3":"UGA","name":"Uganda","land":255305,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"a3":"GHA","name":"Ghana","land":250645,"lost":[0,0,0,0,473,473,473,473,851,851,851,851,1608,1608,1987,2555,2744,2934,2934,3595,4069,4447,4447,4636,4826,5015,5204,5582,5866,6339,6528,6623,7285,7759,7949,8422,8895,8989,9273,9652,10030,10597,10975,11259,11259,11259,11259,11447,11732,11826,11921,12015,12394,12583,12772,13056,13339,13717,14001,14190,14380,14947,15136,15515,15799,16083,16272,16367,16745,17218,17407,17691,17880,17975,18163,18353,18921,19110,19677]},{"a3":"GIN","name":"Guinea","land":238090,"lost":[279,279,279,279,648,648,648,648,1110,1110,1110,1110,1665,2775,3053,3238,3792,4162,4441,5181,5644,5829,5922,6199,6569,7033,7217,7310,7772,7865,8142,8605,8882,9159,9437,9622,9807,9992,9992,9992,9992,9992,10084,10269,10269,10269,10362,10639,11010,11102,11379,11472,11472,11565,11565,11750,11843,11843,12214,12306,12398,12584,12952,13137,13321,13505,13597,13876,13967,13967,14244,14520,14520,14520,14613,14613,14613,15068,15347]},{"a3":"LAO","name":"Laos","land":232538,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"a3":"ROU","name":"Romania","land":227536,"lost":[0,0,0,0,334,334,334,334,620,620,620,620,716,764,952,1142,2574,2812,3053,3483,3911,4339,5457,5936,6174,6556,6750,6941,7181,7512,7656,7847,8089,8425,8664,8951,9630,10110,10353,10450,10790,11124,11219,11797,12137,12375,12905,13244,13535,14115,14355,14689,15206,15591,15831,16655,17232,17718,18057,18346,20119,20452,20987,21762,22300,22489,22969,23605,23847,24281,24575,24820,25253,25498,26031,26712,27051,27634,27876]},{"a3":"KGZ","name":"Kyrgyzstan","land":210448,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"a3":"GUY","name":"Guyana","land":208625,"lost":[376,376,376,376,846,846,846,846,1976,1976,1976,1976,3484,4237,4897,6028,6594,7158,7629,8758,9325,9892,10646,11210,11679,13183,14967,16753,18259,19013,19861,20239,21275,21936,22313,22690,22878,23067,23539,23633,24198,24857,25234,25705,26176,26741,27683,27872,28343,28531,28907,29474,30229,30607,31077,32022,32967,33534,34289,35139,35422,36273,36462,36932,37121,37403,37780,38157,39007,39575,39763,40236,40897,41461,42692,42975,43353,44013,44389]},{"a3":"BLR","name":"Belarus","land":203360,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"a3":"SEN","name":"Senegal","land":192419,"lost":[180,180,180,180,270,270,270,270,907,907,907,907,2970,4587,5921,6988,8158,9414,10305,11286,12364,13347,14418,15491,15937,17280,17814,18709,20048,21919,22811,24325,26670,28185,29981,31234,33110,35622,37325,38667,41782,44377,46081,48403,50460,52779,55103,57696,61995,65043,68986,72830,75695,78822,81942,84629,88660,93762,97783,103585,108765,113774,118150,121456,124230,127187,129062,132104,133805,136405,137930,139995,141702,143403,145018,146538,148065,149141,149770]},{"a3":"URY","name":"Uruguay","land":182753,"lost":[65,65,65,65,525,525,525,525,1184,1184,1184,1184,2036,2625,3940,4862,5719,6314,7498,8294,8956,10152,10888,12011,12678,13403,14195,15126,15525,16190,17438,18360,18957,19488,19950,20544,21559,22220,22617,23408,24075,24996,25520,25786,26858,28187,28783,29311,30037,30707,31508,32307,33259,33990,34998,36075,37022,37552,38219,38820,39753,41114,42057,42660,43867,44807,45880,46896,48031,49228,49959,51107,51577,52660,53463,54005,54891,55968,56706]},{"a3":"SYR","name":"Syria","land":182227,"lost":[0,0,0,0,63,63,63,63,63,63,63,63,63,127,127,127,127,127,127,127,127,127,127,189,189,253,253,253,253,253,253,253,253,253,253,253,253,253,253,253,253,253,253,253,317,317,317,317,317,317,317,382,382,382,382,382,446,446,446,510,510,638,638,638,638,638,701,701,701,765,765,765,765,765,765,828,828,828,828]},{"a3":"KHM","name":"Cambodia","land":182076,"lost":[92,92,92,92,92,92,92,92,829,829,829,829,2948,4790,6721,9663,10766,11960,14435,25250,29712,32898,34633,38368,40279,41460,43005,44003,45187,46642,48371,49464,50101,51104,51920,53288,53835,54651,55924,56655,57199,58745,59381,60295,60750,61842,62389,63661,64479,65300,65753,66575,67667,68394,69212,69668,70305,70940,71575,72576,73028,73575,74752,75113,75660,76659,78286,79737,80280,81187,82092,82456,82908,83820,84910,86448,87719,88446,89627]},{"a3":"SOL","name":"Somaliland","land":171362,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,276,460,736,736,736,828,920,1012,1105,1105,1105,1105,1105,1197,1381,1381,1381,1473,1565,1749,1749,1841,1933,1933,2118,2394,2671,2762,2854,2854,2947,2947,2947,3039,3039,3039,3039,3039,3039,3039,3131,3223,3223,3223,3223,3315,3315,3315,3315,3683,3960,4052,4052,4052,4052,4144,4237,4329,4329,4329,4421,4421,4421,4513,4513,4513,4513]},{"a3":"NPL","name":"Nepal","land":159746,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,77,77,153,306,460,536,843,1072,1149,1225,1455]},{"a3":"BGD","name":"Bangladesh","land":153553,"lost":[493,493,493,493,1230,1230,1230,1230,2052,2052,2052,2052,4508,10056,18119,25699,39303,47084,54615,60132,66446,72907,77760,81885,86171,90292,93928,97418,100421,103498,105861,107911,109644,111134,112860,114823,115761,116702,118041,119136,120236,121097,122514,123767,124561,125498,125965,126513,126902,127614,128318,128714,129181,129728,130117,130275,130818,131282,131757,131994,132545,133167,133406,133719,134112,134590,134898,135380,135694,135775,136006,136236,136472,136706,136706,136706,138078,138538,138538]},{"a3":"TUN","name":"Tunisia","land":153084,"lost":[122,122,122,122,506,506,506,506,1089,1089,1089,1089,1475,1797,2380,3030,3355,3734,4182,4310,4822,5455,5715,5975,6229,6360,6423,6743,6932,7509,7701,7968,8169,8366,8676,9003,9320,9640,9897,9958,10336,10777,10903,10903,11032,11417,11484,11680,11810,11938,12198,12641,23863,24320,24581,25105,25504,25955,26337,26530,26918,27178,27501,27832,28155,28351,28738,28934,30080,30336,30713,31230,31622,32012,32397,33178,33628,33955,34215]},{"a3":"GRC","name":"Greece","land":143782,"lost":[530,530,530,530,1053,1053,1053,1053,1618,1618,1618,1618,1917,2256,2485,2911,3192,3540,3902,4559,4972,5201,5489,5956,6420,6819,7108,7170,7231,7580,7980,8205,8779,9413,9642,9754,10158,10458,10934,11054,11526,11691,11806,12216,12684,12799,13510,13626,13810,13920,14202,14370,14666,15324,15548,15839,16074,16375,16544,16783,17013,17356,17417,17593,17825,18170,18514,18926,19227,19635,19873,20099,20387,20670,20724,21067,21185,22464,23088]},{"a3":"SUR","name":"Suriname","land":143133,"lost":[283,283,283,283,661,661,661,661,850,850,850,850,1417,1985,2552,3213,3875,5294,6145,6901,7657,8698,9833,10968,12576,13238,14279,15319,16738,17873,19009,19198,19482,19672,19956,20240,20523,20808,20808,21186,21375,21660,22228,22796,23269,23743,24122,24595,24879,25164,25542,26016,26395,26963,27437,28100,28479,28858,29142,30091,30565,30849,31228,31702,31986,32175,33123,33881,34260,34639,35113,35682,35871,36061,36440,36630,36914,37293,37388]},{"a3":"TJK","name":"Tajikistan","land":139878,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"a3":"PRK","name":"North Korea","land":130197,"lost":[57,57,57,57,346,346,346,346,575,575,575,575,749,1097,1445,1561,1964,2366,2598,3173,3632,4386,4775,5001,5231,6394,6731,7075,7422,7890,8120,8294,9096,9661,10005,10295,10470,11043,11568,11798,12487,12783,13241,13411,13640,13753,13868,13925,14033,14205,14729,14784,14956,15015,15301,15409,15700,15816,16101,16386,16553,16665,16884,17218,17497,18007,18125,18356,18821,18939,19113,19171,19285,19515,19623,19797,20079,20138,20313]},{"a3":"ERI","name":"Eritrea","land":129810,"lost":[87,87,87,87,441,441,441,441,798,798,798,798,972,1418,1952,2309,2663,3377,3466,3908,4177,4265,4354,4533,4980,5071,5248,5425,5602,5777,5863,5952,6578,6929,7196,7466,7645,7915,8359,8448,8448,8714,8891,9071,9159,9513,9601,9601,9959,10318,10318,10318,10318,10407,10496,10496,10496,10496,10496,10496,10675,10762,10942,11119,11208,11383,11471,11739,11739,11739,11829,11918,11918,11918,12185,12717,12807,12807,12896]},{"a3":"NIC","name":"Nicaragua","land":129128,"lost":[0,0,0,0,539,539,539,539,1715,1715,1715,1715,2888,4694,6326,7138,7955,9043,9769,10404,11040,11220,11766,12762,13939,14665,15118,15571,16112,16657,17202,17840,18570,19022,19386,19931,20295,20657,21200,21744,22017,22380,22924,23561,24107,24744,25107,25652,26382,26832,26923,27196,27377,28098,28460,28732,29002,29726,30269,30451,32179,32905,33357,44905,45084,45902,46359,47087,47725,47905,48175,48449,48993,49175,49448,50359,50632,51177,51359]},{"a3":"HND","name":"Honduras","land":119712,"lost":[888,888,888,888,1066,1066,1066,1066,1511,1511,1511,1511,1867,2755,2845,3736,4537,5074,5517,5960,6316,6673,7206,7383,7915,8359,8447,8626,9340,9518,10059,10412,10678,10767,11125,11394,11837,11926,12281,12369,12637,12816,12904,12904,13171,13348,13348,13527,13527,13704,14325,14948,15125,15302,15481,15571,15661,15661,15927,16106,16106,16197,16555,16643,16733,16910,17088,17177,17445,17534,17713,17893,17893,17983,18072,18161,18250,18250,18429]},{"a3":"CUB","name":"Cuba","land":119216,"lost":[416,416,416,416,1649,1649,1649,1649,4111,4111,4111,4111,5511,8631,11425,15033,17491,19549,21936,23417,25390,27113,28590,29168,30488,31476,32385,33291,34521,35508,36326,37233,38135,39365,40356,41019,41843,42995,43819,44312,44891,45714,46618,47606,48514,49086,49743,50489,50900,51228,52383,53039,53620,54531,55031,55441,56349,56680,57586,58158,58980,59477,59722,60292,60871,61199,61861,62357,63095,64010,64669,65245,65735,65983,66556,67213,67873,68776,69518]},{"a3":"BGR","name":"Bulgaria","land":118917,"lost":[0,0,0,0,0,0,0,0,154,154,154,154,205,306,358,358,462,462,462,565,771,771,771,771,871,1070,1070,1070,1070,1070,1171,1222,1222,1274,1378,1430,2173,2224,2324,2324,2374,2426,2476,2526,2682,2981,3083,3135,3185,3236,3340,3340,3390,3442,3491,3644,3644,3644,3697,3797,5339,5439,5489,5836,5936,5987,6037,6135,6135,6235,6538,6588,6588,6739,6739,6739,6837,6989,7038]},{"a3":"BEN","name":"Benin","land":113754,"lost":[94,94,94,94,189,189,189,189,377,377,377,377,566,943,1038,1226,1226,1226,1321,1321,1509,1604,1604,1981,2075,2264,2264,2264,2358,2358,2358,2546,2641,2641,2829,2829,2923,3018,3112,3206,4524,4617,4712,4900,4900,5182,5371,5371,5371,5465,5559,5559,5748,5842,5936,5936,6219,6407,6407,6689,6971,6971,7065,7441,7535,7818,7912,8006,8194,8194,8288,8383,8571,8665,8759,8947,9136,9136,9230]},{"a3":"MWI","name":"Malawi","land":106782,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,87,87,87,87,87,87,87,87,87,87,87,87,87,87,87,87,351,351,351,351,351,351,439,527,615,615,615,615,615,791,791,791]},{"a3":"KOR","name":"South Korea","land":106494,"lost":[126,126,126,126,379,379,379,379,633,633,633,633,942,1893,2780,3601,4107,4609,5924,6489,6932,7559,8314,8562,9064,9884,10013,10585,11465,11958,12406,12657,12908,13412,13916,14232,14916,15104,15591,16286,16795,17045,17619,17867,18115,18303,18491,18802,19302,19613,19739,19931,20317,20684,20745,20874,21249,21436,21878,22123,22184,22614,22864,23245,23493,23681,23805,24118,24241,24241,24686,24880,25067,25448,25761,25889,26019,26147,26830]},{"a3":"ISL","name":"Iceland","land":105240,"lost":[47,47,47,47,331,331,331,331,611,611,611,611,934,1245,1508,1718,1994,2178,2404,2617,2725,2921,3095,3181,3322,3506,3756,3913,4139,4355,4500,4707,4845,5054,5194,5351,5490,5680,5822,5947,6172,6340,6441,6574,6724,6933,7088,7314,7545,7726,7779,7920,8089,8230,8382,8469,8618,8753,8842,9100,9248,9347,9469,9516,9569,9603,9686,9828,9995,10167,10399,10555,10753,10821,10889,11045,11201,11388,11438]},{"a3":"GTM","name":"Guatemala","land":104271,"lost":[0,0,0,0,90,90,90,90,90,90,90,90,90,268,628,898,1257,1347,1617,1974,2154,2332,2600,2956,3046,3136,3404,3494,3673,3763,3853,3943,4121,4301,4569,4569,4569,4747,5368,5368,5636,5726,5995,6085,6263,6353,6353,6533,6533,6622,6622,6712,6712,6802,6889,6977,6977,7244,7334,7423,7513,7602,7602,8042,8128,8659,8834,8834,9099,9099,9366,9975,10235,10408,10497,10758,11020,11107,11542]},{"a3":"PRT","name":"Portugal","land":97182,"lost":[0,0,0,0,177,177,177,177,292,292,292,292,351,527,588,647,765,880,1062,1181,1236,1294,1411,1470,1470,1757,1815,2224,2342,2403,2403,2522,2522,2522,2581,2581,2693,3964,4254,4426,4934,5114,5349,5577,5810,5979,6047,6107,6288,6517,6631,6799,6910,7192,7365,7602,7831,7884,8293,8346,8515,8805,8980,9150,9382,9723,9897,10122,10180,10354,10415,10528,10648,11119,11291,11526,11752,11989,12392]},{"a3":"LBR","name":"Liberia","land":96431,"lost":[0,0,0,0,190,190,190,190,285,285,285,285,569,1042,1231,1515,1609,2081,2175,2175,2459,2743,2933,3122,3406,3784,4067,4445,4823,5011,5200,5483,5578,5578,5956,6050,6145,6240,6240,6523,6997,7186,7470,7659,7754,8227,8510,8604,8698,9170,9453,9453,9453,9737,9832,9927,10116,10304,10398,10965,11154,11438,11627,11816,12289,12289,12289,12384,12667,12667,12762,12951,13329,13423,13612,13801,14368,14936,15030]},{"a3":"JOR","name":"Jordan","land":91622,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,72,72,72,72,72,72,72,72,72,72,72,72,72,72,72,72,72,72,72,72,72,72,72,72,72,72,72,72,72,72,72,72,72,72,72,72,72,72,72,72,72,72,72,72]},{"a3":"HUN","name":"Hungary","land":90417,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"a3":"SAH","name":"W. Sahara","land":90009,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,83,166,166,166,166,166,248,248,414,414,497,579,579,579,579,579,579,579,579,579,579,579,579,579,662,662,662,745,828,828,910,910,910,910,910,910,910,910,910,910,910,993,993,993,993,993,993,1076,1076,1076,1076,1076,1076,1076,1076,1076,1076,1076,1076,1076,1076,1076]},{"a3":"AUT","name":"Austria","land":85640,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"a3":"PAN","name":"Panama","land":83696,"lost":[373,373,373,373,747,747,747,747,1307,1307,1307,1307,1681,1962,2616,3177,3736,4110,4764,5324,6446,6820,7194,7941,8782,9063,9718,10185,10373,10560,10840,11027,11400,11587,11868,12147,12335,12708,12895,13362,13828,13922,14202,14483,14670,14857,15511,15604,16165,16352,17098,17286,17940,18406,18872,19152,19713,20274,20461,20648,20929,21396,21676,21862,22142,22236,22516,22983,23076,23356,23637,24010,24104,24291,24664,24852,24852,25225,25318]},{"a3":"SRB","name":"Serbia","land":77315,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,196,196,196,196,196,196,196,196,196,196,196,196,196,196,196,196]},{"a3":"IRL","name":"Ireland","land":72624,"lost":[31,31,31,31,200,200,200,200,479,479,479,479,652,784,926,1231,1607,1848,2164,2411,2779,3057,3329,3671,4149,4326,4700,4944,5217,5588,5924,6165,7233,7684,7991,8505,8783,9024,9229,9337,9848,10319,10591,10972,11387,11660,12177,12702,12907,13249,13529,13878,14120,14221,14360,14705,14909,15281,15519,15823,16168,16340,16577,16845,17216,17702,17982,18536,19172,19311,19476,19683,20146,20448,20749,21055,21837,22327,22529]},{"a3":"CZE","name":"Czechia","land":72582,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"a3":"ARE","name":"United Arab Emirates","land":71784,"lost":[397,397,397,397,953,953,953,953,1588,1588,1588,1588,2219,2617,3091,3728,4125,4363,4521,4838,5155,5235,5471,5870,6189,6266,6426,6585,6822,7059,7297,7616,7933,8012,8250,8330,8567,8725,9122,9359,9439,9599,9834,10151,10627,10707,10866,10946,11104,11424,11584,11976,12214,12528,12924,13004,13318,13478,13636,13875,14034,14274,14274,14434,14753,14911,15070,15150,15310,15627,15943,16103,16498,16657,16737,17056,17370,17528,17528]},{"a3":"LKA","name":"Sri Lanka","land":71286,"lost":[372,372,372,372,930,930,930,930,1770,1770,1770,1770,2800,3361,4016,4483,5326,6262,7104,7386,7668,8322,9445,9726,10193,10945,11226,11414,12070,12352,12726,13196,13759,14040,14792,15261,15543,16107,16576,17139,17514,18358,18825,19106,19294,19574,19950,20138,20981,21450,21917,22292,23041,23603,23979,24259,24632,25287,25569,26038,26320,26975,27538,27725,27912,28193,28567,28849,29224,29599,30350,30725,31289,31944,32414,32882,33728,33916,34197]},{"a3":"GEO","name":"Georgia","land":69393,"lost":[0,0,0,0,52,52,52,52,261,261,261,261,366,417,522,522,731,835,835,887,887,940,1043,1148,1200,1251,1303,1303,1355,1408,1617,1617,1670,1670,1722,1722,1824,1824,1929,1929,1929,1929,1929,1929,1929,1929,1980,2031,2083,2083,2135,2187,2187,2187,2240,2292,2292,2292,2292,2292,2396,2396,2551,2656,2656,2812,2812,2915,2966,2966,3071,3123,3176,3176,3280,3280,3331,3331,3383]},{"a3":"SLE","name":"Sierra Leone","land":68926,"lost":[0,0,0,0,0,0,0,0,281,281,281,281,655,937,1968,2530,3467,3937,4781,5157,5625,5999,6655,6935,7217,7592,7779,7967,8435,8809,9183,9277,9558,9746,10214,10307,10588,10776,10962,11150,11337,11618,11712,11994,11994,12087,12087,12087,12462,12649,12836,13024,13117,13117,13117,13211,13585,13585,14053,14334,14521,14989,15082,15269,15830,16017,16017,16766,17047,18445,19099,20029,20123,21245,21713,22086,22460,23394,23676]},{"a3":"LVA","name":"Latvia","land":67247,"lost":[82,82,82,82,195,195,195,195,363,363,363,363,474,699,1013,1297,1495,2185,2469,2640,3208,3604,3974,4482,4853,5195,5451,5960,6161,6502,6841,7098,7382,7552,7920,8147,8610,9128,9471,10166,10338,10650,11135,11532,11988,12307,12646,13214,13417,13929,14243,14669,15011,15375,15796,16112,16454,16764,17160,17330,17586,17897,18038,18345,18684,18911,19137,19333,19586,21204,21595,22156,22490,22852,23270,23829,24335,24752,25147]},{"a3":"AZE","name":"Azerbaijan","land":66352,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5891,6057,6169,6336,6392,6557,6614,6614,6725,6998,7220,7387,7499,7554,7724,7779,7944,8000,8110,8279,8279,8334,8390,8390,8503,8559,8669,8778,8890,8946,8946,9114,9114,9223,9223,9223,9223,9223]},{"a3":"LTU","name":"Lithuania","land":64227,"lost":[0,0,0,0,60,60,60,60,214,214,214,214,306,429,582,825,856,918,1040,1133,1163,1194,1224,1377,1468,1528,1650,1681,1681,1712,1772,1897,1990,2081,2112,2295,2327,2418,2540,2602,2695,2756,2877,3092,3184,3338,3521,3767,3950,4318,4534,4805,5177,5419,5784,6086,6420,7372,7671,8157,8400,8889,9229,9625,10323,10784,11465,11893,12289,12717,13210,13426,13919,14193,14558,14901,15242,15821,16500]},{"a3":"HRV","name":"Croatia","land":58519,"lost":[99,99,99,99,296,296,296,296,442,442,442,442,636,829,1027,1177,1226,1323,1471,1571,1571,1718,1816,1966,2061,2310,2310,2411,2557,2654,2751,2899,3196,3347,3445,3597,3646,3746,3844,3896,3943,3991,4141,4189,4392,4443,4637,4685,4784,4984,5086,5136,5184,5184,5234,5234,5282,5282,5330,5379,5530,5582,5632,5681,5831,5931,6082,6082,6130,6178,6226,6226,6323,6323,6374,6425,6624,6672,6774]},{"a3":"TGO","name":"Togo","land":56576,"lost":[0,0,0,0,0,0,0,0,94,94,94,94,283,378,378,472,472,566,566,755,849,944,944,1132,1132,1132,1321,1415,1509,1509,1509,1604,1698,1698,1793,1887,2075,2075,2075,2075,2170,2170,2264,2358,2358,2358,2452,2452,2641,2641,2641,2735,2735,2830,2830,3207,3207,3301,3396,3490,3584,3584,3584,3584,3679,3679,3679,3679,3773,3867,3867,3961,3961,4056,4150,4150,4150,4150,4150]},{"a3":"BIH","name":"Bosnia and Herz.","land":56494,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"a3":"CRI","name":"Costa Rica","land":50767,"lost":[0,0,0,0,93,93,93,93,93,93,93,93,186,371,464,742,1020,1390,1574,1759,1945,2223,2223,2407,2407,2591,2591,2684,2684,2868,3611,3611,3703,3888,4812,4905,5276,5461,5926,6111,6296,6388,6760,6945,7131,7131,7409,7687,7781,7967,8059,8151,8244,8336,8521,8521,8985,9171,9448,9726,9818,10003,10003,10832,10924,11016,11293,11385,11478,11848,12126,12218,12311,12496,12588,12588,12865,13050,13236]},{"a3":"DOM","name":"Dominican Rep.","land":50697,"lost":[0,0,0,0,172,172,172,172,172,172,172,172,257,343,516,1028,1113,1113,1199,1370,1542,1626,1712,1798,1968,2054,2312,2397,2569,2995,3080,3337,3423,3508,4107,4364,4706,4962,4962,5304,5475,5819,6246,6331,6587,6671,6757,7099,7356,7442,7613,7786,7871,7956,8042,8128,8385,8470,8980,9321,9492,10005,10091,10263,10433,10519,10519,10605,10691,10691,10691,10861,11033,11290,11716,11973,11973,12058,12400]},{"a3":"SVK","name":"Slovakia","land":49462,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"a3":"EST","name":"Estonia","land":47167,"lost":[230,230,230,230,463,463,463,463,772,772,772,772,1288,1805,2455,2814,3077,3384,3850,4416,4778,5061,5320,5710,6221,6686,7101,7564,7925,8490,8847,9210,9853,10264,10650,11036,11342,11706,12016,12300,12605,12836,13165,13444,13806,14113,14419,14698,14901,15230,15383,18513,18795,19052,19386,19664,20048,21999,22491,23000,23387,23845,24490,24981,25342,25802,26187,26594,27366,27883,28217,28576,29090,29398,29886,30620,31008,31417,31861]},{"a3":"CHE","name":"Switzerland","land":46575,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"a3":"DNK","name":"Denmark","land":45512,"lost":[306,306,306,306,1059,1059,1059,1059,2054,2054,2054,2054,3210,4553,5292,6497,7855,9782,10893,11819,12896,13580,14473,15196,15881,16704,17502,18361,19053,19834,20641,21424,21872,22403,23018,23706,24333,25083,25705,26438,27277,28117,28746,29247,30088,30774,31310,32148,32691,33054,33704,34423,34814,35264,35776,36108,36500,36888,37244,37756,37935,38321,38707,39127,39306,39601,39870,40139,40648,40948,41217,41395,41669,41819,41938,42056,42265,42441,42682]},{"a3":"BTN","name":"Bhutan","land":45153,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,152,152,152,228,228,228,228,228,228,228,228,228,228]},{"a3":"GNB","name":"Guinea-Bissau","land":39202,"lost":[735,735,735,735,1561,1561,1561,1561,1836,1836,1836,1836,2385,2935,3209,4034,4951,6049,6874,7789,8703,9252,9985,10991,11815,12637,13458,14007,14373,14921,15378,15926,16109,16749,17206,17664,18303,18759,19307,19762,19853,20401,20675,20766,21131,21405,22136,22682,22956,23503,24234,24598,24872,25145,25236,25692,25783,26057,26694,26967,27332,27789,28427,28700,29065,29521,29794,30069,30342,30433,30616,31072,31437,31894,32352,32534,32626,33812,34085]},{"a3":"TWN","name":"Taiwan","land":38087,"lost":[79,79,79,79,478,478,478,478,638,638,638,638,1040,1683,2004,2083,2244,2486,2971,3372,3614,3935,4260,4421,4662,4744,4904,5229,5309,5468,5630,5791,5791,6033,6116,6116,6437,6518,6598,6598,6598,6839,6999,6999,7318,7480,7558,7558,7558,7719,7797,7797,7957,8114,8114,8114,8195,8195,8277,8521,8521,8681,8761,8761,8919,8998,8998,9077,9077,9077,9077,9315,9315,9315,9396,9477,9477,9556,9634]},{"a3":"MDA","name":"Moldova","land":37442,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,46,136,182,182,182,182,227,272,317,361,451,451,451,451,451,451,496,496,541,630,630,630,630,630,675,675,675,720,720,720,1041,1133,1133,1133,1179,1179,1224,1452,1496,1541,1541,1853,2033,2033,2125,2125,2700,2700,2700,2838,2929,2929,2929,2929,2975,2975,3064,3108,3153,3244,3337,3517,3517,3562]},{"a3":"SLB","name":"Solomon Is.","land":35616,"lost":[371,371,371,371,464,464,464,464,1023,1023,1023,1023,1490,1956,2143,2424,2705,2799,2891,2891,3078,3170,3638,3731,3731,4010,4385,4572,4760,4853,4947,5039,5227,5320,5414,5508,5508,5695,5788,6069,6350,6725,6817,6908,7095,7189,7467,7747,7839,7933,7933,7933,8025,8118,8211,8211,8303,8303,8303,8584,8678,8863,8957,9143,9143,9330,9330,9517,9517,9795,9795,9795,10073,10260,10447,10447,10634,10728,10822]},{"a3":"LSO","name":"Lesotho","land":33947,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"a3":"ARM","name":"Armenia","land":33917,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"a3":"BEL","name":"Belgium","land":31419,"lost":[150,150,150,150,263,263,263,263,413,413,413,413,600,1089,1352,1918,2484,2748,3049,3200,3388,3802,3839,4066,4179,4403,4517,5008,5347,5727,5840,5991,6292,6821,7161,7312,7426,7810,8077,8115,8305,8532,8913,8989,9103,9217,9255,9332,9560,9674,9751,9903,10018,10095,10170,10322,10514,10856,11046,11198,11274,11313,11542,11731,11923,12036,12152,12305,12496,12571,12571,12610,12686,12801,12915,12953,12991,13182,13298]},{"a3":"GNQ","name":"Eq. Guinea","land":29292,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,95,95,95,95,95,95,191,191,191,191,191,286,286,859,859,859,955,1050,1241,1336,1432,1432,1432,1432,1623,1623,1909,2100,2195,2195,2195,2195,2386,2482,2482,2482,2577,2577,2577,2577,2577,2768,2959,3054,3149,3149,3149,3149,3149,3245,3436,3436,3436,3436,3436,3817,4008,4008,4008,4103,4103,4103,4103]},{"a3":"BDI","name":"Burundi","land":28836,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"a3":"RWA","name":"Rwanda","land":28234,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},{"a3":"ALB","name":"Albania","land":27852,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,55,109,163,163,218,273,273,328,381,435,492,492,545,600,709,709,1090,1144,1144,1144,1144,1252,1464,1464,1464,1517,1625,1680,1680,1789,1842,1951,1951,2006,2006,2115,2167,2167,2167,2222,2332,2389,2389,2389,2389,2443,2498,2606,2606,2606,2714,2821,2875,2875,2875,2875,2929,2929,2929,2929,2982,3092,3092,3145,3145,3145,3200]},{"a3":"BLZ","name":"Belize","land":26481,"lost":[0,0,0,0,87,87,87,87,605,605,605,605,864,1212,1820,2344,2780,2953,4250,4598,4773,5206,6072,6507,6766,7461,8156,8679,8765,8940,9199,9464,9550,9725,10076,10601,10950,11124,11647,11995,12341,12427,12863,13036,13124,13124,13124,13211,13473,13473,13734,13821,13821,13821,14082,14170,14170,14170,14257,14257,14345,14433,14696,14696,14696,14782,14782,14782,14782,14869,15044,15044,15044,15132,15219,15219,15394,15394,15394]},{"a3":"HTI","name":"Haiti","land":25726,"lost":[0,0,0,0,0,0,0,0,85,85,85,85,85,85,85,85,85,85,170,170,170,255,341,341,341,341,341,426,598,684,684,684,684,770,770,770,770,770,770,856,1112,1198,1370,1455,1540,1540,1540,1711,1711,1795,1880,1880,1880,1965,2135,2135,2135,2135,2135,2135,2222,2222,2222,2307,2478,2563,2648,2648,2648,2733,2733,2818,2904,2988,2988,2988,3073,3073,3073]},{"a3":"NLD","name":"Netherlands","land":24772,"lost":[1060,1060,1060,1060,2343,2343,2343,2343,3806,3806,3806,3806,4877,6026,6846,7601,8391,9216,9970,10936,11613,12294,13153,13763,14264,14985,15630,16196,16735,17206,17498,17787,18077,18334,18661,18919,19623,19733,20065,20436,20809,21064,21395,21579,21907,22016,22053,22233,22396,22432,22615,22800,22873,22983,23056,23092,23092,23128,23236,23309,23347,23347,23421,23493,23493,23530,23530,23530,23644,23680,23680,23680,23680,23680,23716,23716,23754,23754,23754]},{"a3":"SVN","name":"Slovenia","land":23583,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,47,47,47,47,47,47,47,47,47,47,93,93,93,93,93,139,139,139,139,139,139]},{"a3":"DJI","name":"Djibouti","land":23445,"lost":[0,0,0,0,0,0,0,0,91,91,91,91,183,183,183,274,274,274,366,366,366,366,366,366,457,548,548,639,731,731,822,822,913,913,1005,1005,1096,1096,1096,1096,1188,1279,1279,1279,1279,1279,1279,1279,1279,1370,1370,1370,1370,1462,1462,1462,1553,1553,1553,1553,1553,1644,1644,1644,1644,1644,1644,1644,1644,1644,1644,1644,1644,1827,1827,1827,1827,1827,1827]},{"a3":"NCL","name":"New Caledonia","land":22966,"lost":[0,0,0,0,81,81,81,81,166,166,166,166,247,330,496,579,744,827,827,827,1158,1242,1242,1242,1242,1324,1490,1490,1574,1657,1821,2069,2153,2235,2235,2235,2235,2318,2400,2483,2733,2733,2900,3066,3150,3150,3399,3481,3562,3726,3809,3976,4060,4308,4308,4308,4391,4558,4641,4724,4724,4890,5138,5303,5303,5303,5469,5469,5635,5801,6135,6135,6135,6217,6301,6386,6386,6469,6637]},{"a3":"FJI","name":"Fiji","land":22600,"lost":[0,0,0,0,86,86,86,86,86,86,86,86,521,782,782,951,1039,1039,1213,1387,1387,1474,1647,1822,1822,1910,1997,1997,2172,2172,2258,2345,2345,2606,2781,2869,2955,2955,3129,3129,3215,3391,3479,3566,3651,3912,3998,3998,3998,3998,4085,4258,4258,4346,4346,4433,4521,4521,4607,4693,4781,4867,5041,5041,5128,5389,5563,5737,5913,5913,6086,6261,6348,6436,6436,6436,6436,6436,6610]},{"a3":"MKD","name":"North Macedonia","land":22587,"lost":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}]};
+const G = {"world":{"z":4,"x0":0,"y0":0,"w":4096,"h":4096,"rf":4},"europe":{"z":7,"x0":15108,"y0":9042,"w":2550,"h":2374,"rf":2},"height_classes":[-4000,-2000,-1000,-200,-130,70,150,300,600,1000,1500,2500,4000]};
+const NS = "http://www.w3.org/2000/svg";
+const el = (t, a = {}, p) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); if (p) p.appendChild(e); return e; };
+const fmt = n => n == null ? "n/a" : Math.round(n).toLocaleString("en-GB");
+const pc = (x, d = 0) => (x * 100).toFixed(d) + "%";
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const sgn = v => (v > 0 ? "+" : v < 0 ? "−" : "") + (Math.abs(v) % 1 ? Math.abs(v).toFixed(2).replace(/0$/, "") : Math.abs(v));
+const big = v => v >= 1e9 ? (v / 1e9).toFixed(2) + " billion" : v >= 1e6 ? (v / 1e6).toFixed(1) + " million" : fmt(v);
+const tip = document.getElementById("tip");
+function showTip(h, x, y) { tip.innerHTML = h; tip.style.display = "block"; const w = tip.offsetWidth; x = Math.max(w / 2 + 8, Math.min(innerWidth - w / 2 - 8, x)); tip.style.left = x + scrollX + "px"; tip.style.top = y + scrollY + "px"; }
+function hideTip() { tip.style.display = "none"; }
+const redraws = [];
+function resp(box, render) { let last = 0; const go = (force) => { const w = Math.max(280, Math.round(box.clientWidth)); if (!force && Math.abs(w - last) < 4) return; last = w; box.innerHTML = ""; render(w, w < 560); }; new ResizeObserver(() => go()).observe(box); go(); redraws.push(() => go(true)); }
+const lbl = (svg, x, y, s, cls = "lab", anchor = "start") => { const t = el("text", { x, y, class: cls, "text-anchor": anchor }, svg); t.textContent = s; return t; };
+const isDark = () => { const r = document.documentElement; return r.dataset.theme ? r.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; };
+document.getElementById("theme").onclick = () => { const r = document.documentElement; r.dataset.theme = isDark() ? "light" : "dark"; redraws.forEach(f => f()); };
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+/* ---------------- levels ---------------- */
+const LV = R.levels, K = LV.length, K0 = R.k0, I0 = K0 - 1;
+const POS0 = K0;  // index of the first positive level; per-level arrays for positive levels start here
+let li = I0;      // current level index
+const lvl = () => LV[li];
+const kL = () => li + 1;  // a cell is sea when its code <= kL
+const idxOf = v => { let b = 0; for (let i = 0; i < K; i++) if (Math.abs(LV[i] - v) < Math.abs(LV[b] - v)) b = i; return b; };
+const listeners = [];
+function setLevel(i, src) { li = Math.max(0, Math.min(K - 1, i)); if (src !== "slider") slider.value = li; listeners.forEach(f => f()); }
+
+/* ---------------- colours (the map keeps one palette in both themes) ---------------- */
+const hex = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+const ramp = stops => v => { if (v <= stops[0][0]) return hex(stops[0][1]); for (let i = 1; i < stops.length; i++) if (v <= stops[i][0]) { const [a, ca] = stops[i - 1], [b, cb] = stops[i]; const f = (v - a) / (b - a), A = hex(ca), B = hex(cb); return [0, 1, 2].map(j => A[j] + (B[j] - A[j]) * f); } return hex(stops[stops.length - 1][1]); };
+const LAND = ramp([[0, "#D3DBBA"], [40, "#C6D1A8"], [150, "#CFC9A0"], [500, "#C2AC84"], [1500, "#A88F72"], [3000, "#C9C1B8"], [5500, "#F4F2EE"]]);
+const SEA = ramp([[0, "#A9D8D3"], [20, "#8CC3C4"], [80, "#6AA8B6"], [300, "#4A86A3"], [1500, "#2C5F82"], [5000, "#1D4766"]]);
+const DROWN = ramp([[0, "#EE9B7E"], [10, "#E07A5C"], [40, "#C8573C"], [70, "#A9452F"]]);
+const BELOW = hex("#9B7BC0");
+const EXPOSE = ramp([[0, "#EFE0AE"], [20, "#E8D49C"], [60, "#DCC07E"], [130, "#C9A962"]]);
+const LAKE = hex("#9CC9D6");
+const CLS_H = [-5000, -3000, -1500, -600, -165, 35, 110, 225, 450, 800, 1250, 2000, 3200, 5000];
+// approximate height of a bundled cell from its drowning code and height class
+const cellH = (c, cls) => (c >= 2 && c <= K) ? LV[c - 1] - (c - 2 >= 0 ? (LV[c - 1] - LV[c - 2]) / 2 : 0.5) : CLS_H[cls];
+let LUT = new Uint8ClampedArray(256 * 16 * 8 * 3);
+function buildLUT() {
+  const k = kL(), lev = lvl();
+  for (let c = 0; c < 256; c++) for (let cls = 0; cls < 16; cls++) {
+    const h = cellH(c, Math.min(cls, 13)), water = c <= k, today = c > K0;
+    let rgb, land;
+    if (water && today) { rgb = (c === K0 + 1) ? BELOW : DROWN(lev - h); land = false; }
+    else if (water) { rgb = SEA(lev - h); land = false; }
+    else if (!today) { rgb = EXPOSE(h - lev); land = true; }
+    else { rgb = LAND(Math.max(0, h)); land = true; }
+    for (let s = 0; s < 8; s++) {
+      const m = land ? 0.74 + s * 0.048 : 0.93 + s * 0.012;
+      const o = ((c * 16 + cls) * 8 + s) * 3;
+      LUT[o] = rgb[0] * m; LUT[o + 1] = rgb[1] * m; LUT[o + 2] = rgb[2] * m;
+    }
+  }
+}
+
+/* ---------------- bundled grids ---------------- */
+const SRC = {};
+async function gray(url, w, h) {
+  const img = new Image(); img.src = url; await img.decode();
+  const out = new Uint8Array(w * h), band = Math.min(h, 1024);
+  const cv = document.createElement("canvas"); cv.width = w; cv.height = band;
+  const cx = cv.getContext("2d", { willReadFrequently: true });
+  for (let y0 = 0; y0 < h; y0 += band) {
+    const bh = Math.min(band, h - y0); cx.clearRect(0, 0, w, band); cx.drawImage(img, 0, y0, w, bh, 0, 0, w, bh);
+    const d = cx.getImageData(0, 0, w, bh).data; for (let i = 0, j = y0 * w; i < w * bh; i++, j++) out[j] = d[i * 4];
+  }
+  return out;
+}
+async function loadSrc(name) {
+  const g = G[name];
+  const [code, rel] = await Promise.all([gray(`data/${name}_code.png`, g.w, g.h), gray(`data/${name}_relief.png`, Math.floor(g.w / g.rf), Math.floor(g.h / g.rf))]);
+  SRC[name] = Object.assign({ code, rel, rw: Math.floor(g.w / g.rf), rh: Math.floor(g.h / g.rf) }, g);
+}
+// sample the best bundled grid at global pixel (gx, gy) of zoom z; returns [code, relief, isEurope]
+function sample(gx, gy, z) {
+  const e = SRC.europe;
+  if (e && z >= 5) {
+    const s = 2 ** (e.z - z), x = Math.floor(gx * s) - e.x0, y = Math.floor(gy * s) - e.y0;
+    if (x >= 0 && y >= 0 && x < e.w && y < e.h) return [e.code[y * e.w + x], e.rel[Math.min(e.rh - 1, (y / e.rf) | 0) * e.rw + Math.min(e.rw - 1, (x / e.rf) | 0)], 1, x, y];
+  }
+  const w = SRC.world, s = 2 ** (w.z - z);
+  let x = Math.floor(gx * s) % w.w; if (x < 0) x += w.w; const y = Math.max(0, Math.min(w.h - 1, Math.floor(gy * s)));
+  return [w.code[y * w.w + x], w.rel[((y / w.rf) | 0) * w.rw + ((x / w.rf) | 0)], 0, x, y];
+}
+function nbMin(isEu, x, y) {
+  const g = isEu ? SRC.europe : SRC.world; let m = 255;
+  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+    let xx = x + dx, yy = y + dy; if (isEu) { if (xx < 0 || yy < 0 || xx >= g.w || yy >= g.h) continue; } else { xx = (xx + g.w) % g.w; yy = Math.max(0, Math.min(g.h - 1, yy)); }
+    const c = g.code[yy * g.w + xx]; if (c < m) m = c;
+  }
+  return m;
+}
+
+/* ---------------- the map ---------------- */
+const map = L.map("map", { zoomControl: true, minZoom: 1, maxZoom: 12, worldCopyJump: true, preferCanvas: true, attributionControl: true });
+map.attributionControl.setPrefix('<a href="https://leafletjs.com">Leaflet</a>');
+const VIEWS = { uk: [[48.3, -11.5], [61.3, 10.2]], world: [[-58, -170], [75, 175]] };
+const tiles = new Map();
+let useLive = true;
+const liveOK = { ok: true };
+const Bath = L.GridLayer.extend({
+  createTile(coords, done) {
+    const c = document.createElement("canvas"); c.width = c.height = 256;
+    const t = { c, coords, ctx: c.getContext("2d"), img: null, live: null };
+    tiles.set(this._tileCoordsToKey(coords), t);
+    prepTile(t).then(() => { paint(t); done(null, c); });
+    return c;
+  }
+});
+function prepTile(t) {
+  const { x, y, z } = t.coords, n = 2 ** z;
+  const xw = ((x % n) + n) % n;
+  t.code = new Uint8Array(65536); t.rel = new Uint8Array(65536); t.eu = new Uint8Array(65536);
+  for (let j = 0; j < 256; j++) for (let i = 0; i < 256; i++) {
+    const r = sample(xw * 256 + i + 0.5, y * 256 + j + 0.5, z), o = j * 256 + i;
+    t.code[o] = r[0]; t.rel[o] = r[1]; t.eu[o] = r[2];
+  }
+  t.img = t.ctx.createImageData(256, 256);
+  const wantLive = useLive && liveOK.ok && ((z >= 8) || (z >= 6 && !t.eu[32896]));
+  if (!wantLive) return Promise.resolve();
+  return new Promise(res => {
+    const im = new Image(); im.crossOrigin = "anonymous";
+    im.onload = () => {
+      try {
+        const cv = document.createElement("canvas"); cv.width = cv.height = 256; const cx = cv.getContext("2d", { willReadFrequently: true });
+        cx.drawImage(im, 0, 0); const d = cx.getImageData(0, 0, 256, 256).data;
+        const e = new Float32Array(65536); for (let o = 0; o < 65536; o++) e[o] = d[o * 4] * 256 + d[o * 4 + 1] + d[o * 4 + 2] / 256 - 32768;
+        const nb = new Uint8Array(65536), sh = new Uint8Array(65536);
+        const res_m = 40075016.7 / (256 * n) * Math.cos(Math.atan(Math.sinh(Math.PI * (1 - 2 * (y + 0.5) / n))));
+        for (let j = 0; j < 256; j++) for (let i = 0; i < 256; i++) {
+          const o = j * 256 + i, r = sample(xw * 256 + i + 0.5, y * 256 + j + 0.5, z);
+          nb[o] = nbMin(r[2], r[3], r[4]);
+          const dx = (e[j * 256 + Math.min(255, i + 1)] - e[j * 256 + Math.max(0, i - 1)]) / (2 * res_m) * 2;
+          const dn = (e[Math.max(0, j - 1) * 256 + i] - e[Math.min(255, j + 1) * 256 + i]) / (2 * res_m) * 2;
+          const hs = (dx * 0.5 - dn * 0.5 + 0.7071) / Math.sqrt(1 + dx * dx + dn * dn);
+          sh[o] = Math.max(0, Math.min(7, Math.round(hs * 7)));
+        }
+        t.live = { e, nb, sh };
+      } catch (err) { liveOK.ok = false; }
+      res();
+    };
+    im.onerror = () => res();
+    im.src = `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${z}/${xw}/${y}.png`;
+  });
+}
+function paint(t) {
+  const d = t.img.data, code = t.code, rel = t.rel, k = kL(), lev = lvl();
+  if (t.live) {
+    const { e, nb, sh } = t.live, cache = new Map();
+    for (let o = 0; o < 65536; o++) {
+      const h = e[o], cc = code[o], eu = t.eu[o];
+      const todayLand = h >= 0 || (eu && cc > K0);
+      const water = lev <= 0 ? (h < lev && nb[o] <= k && !(eu && cc > K0)) : (h < lev && (nb[o] <= k || !todayLand));
+      let rgb, land;
+      if ((rel[o] & 128) && !(cc <= k)) { rgb = LAKE; land = false; }
+      else if (rel[o] & 128) { rgb = SEA(lev - h); land = false; }
+      else if (water && todayLand) { rgb = h < 0 ? BELOW : DROWN(lev - h); land = false; }
+      else if (water) { rgb = SEA(lev - h); land = false; }
+      else if (!todayLand) { rgb = EXPOSE(h - lev); land = true; }
+      else { rgb = LAND(h); land = true; }
+      const m = land ? 0.74 + sh[o] * 0.048 : 0.93 + sh[o] * 0.012, p = o * 4;
+      d[p] = rgb[0] * m; d[p + 1] = rgb[1] * m; d[p + 2] = rgb[2] * m; d[p + 3] = 255;
+    }
+  } else {
+    for (let o = 0; o < 65536; o++) {
+      const c = code[o], r = rel[o], p = o * 4;
+      if ((r & 128) && c > k) { d[p] = LAKE[0]; d[p + 1] = LAKE[1]; d[p + 2] = LAKE[2]; d[p + 3] = 255; continue; }
+      if (r & 128) { const sc = SEA(lev - cellH(c, r & 15)); d[p] = sc[0]; d[p + 1] = sc[1]; d[p + 2] = sc[2]; d[p + 3] = 255; continue; }
+      const q = ((c * 16 + (r & 15)) * 8 + ((r >> 4) & 7)) * 3;
+      d[p] = LUT[q]; d[p + 1] = LUT[q + 1]; d[p + 2] = LUT[q + 2]; d[p + 3] = 255;
+    }
+  }
+  t.ctx.putImageData(t.img, 0, 0);
+}
+const bath = new Bath({ tileSize: 256, updateWhenZooming: false, keepBuffer: 1, noWrap: false,
+  attribution: 'Elevation: <a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md">AWS Terrain Tiles</a> (Mapzen; ETOPO1, GMTED2010, SRTM, EU-DEM and others) · Coast: Natural Earth · Model: T. Hotham' });
+bath.on("tileunload", e => { tiles.delete(bath._tileCoordsToKey(e.coords)); });
+let raf = 0;
+function repaintAll() { if (raf) return; raf = requestAnimationFrame(() => { raf = 0; buildLUT(); tiles.forEach(t => { if (t.img) paint(t); }); drawOverlay(); }); }
+
+/* overlay: today's coast, Doggerland box, places under water */
+const ov = document.getElementById("overlay"), ox = ov.getContext("2d");
+let COAST = null, CITIES = null, TOWNS = null, dotsDrawn = [];
+function sizeOverlay() { const r = map.getContainer().getBoundingClientRect(), dpr = devicePixelRatio || 1; ov.width = r.width * dpr; ov.height = r.height * dpr; ov.style.width = r.width + "px"; ov.style.height = r.height + "px"; ox.setTransform(dpr, 0, 0, dpr, 0, 0); }
+function drawOverlay() {
+  const r = map.getContainer().getBoundingClientRect(); ox.clearRect(0, 0, r.width, r.height); dotsDrawn = [];
+  const z = map.getZoom(), b = map.getBounds().pad(0.05), lev = lvl();
+  if (document.getElementById("coast").checked && COAST && z < 8) {
+    ox.strokeStyle = "rgba(19,36,44,.55)"; ox.lineWidth = z >= 6 ? 1 : 0.7; ox.beginPath();
+    const cw = map.getCenter().lng;
+    for (const ln of COAST) {
+      let started = false, prev = null;
+      for (const [lo, la] of ln) {
+        if (la < b.getSouth() - 2 || la > b.getNorth() + 2) { started = false; continue; }
+        let lon = lo; while (lon - cw > 180) lon -= 360; while (lon - cw < -180) lon += 360;
+        const p = map.latLngToContainerPoint([la, lon]);
+        if (started && prev !== null && Math.abs(lon - prev) < 90) ox.lineTo(p.x, p.y); else ox.moveTo(p.x, p.y);
+        started = true; prev = lon;
+      }
+    }
+    ox.stroke();
+  }
+  if (view === "uk" || z >= 5) {
+    const db = R.doggerland.box, a = map.latLngToContainerPoint([db.lat1, db.lon0]), c = map.latLngToContainerPoint([db.lat0, db.lon1]);
+    ox.setLineDash([5, 4]); ox.strokeStyle = "rgba(19,36,44,.6)"; ox.lineWidth = 1; ox.strokeRect(a.x, a.y, c.x - a.x, c.y - a.y); ox.setLineDash([]);
+    ox.font = "500 11px 'IBM Plex Mono', monospace"; ox.fillStyle = "rgba(19,36,44,.8)"; ox.fillText("Doggerland box", a.x + 4, a.y + 13);
+  }
+  if (!document.getElementById("dots").checked || lev <= 0) return;
+  const minPop = z <= 2 ? 1e6 : z <= 3 ? 4e5 : z <= 4 ? 1.5e5 : z <= 6 ? 5e4 : 0;
+  const pts = [];
+  if (CITIES) for (const c of CITIES.rows) { if (c[5] > lev + 1e-9 || c[4] < minPop) continue; if (c[1] === "GB" && TOWNS && z >= 5) continue; pts.push([c[2], c[3], c[4], c[0], c[1], c[5], c[6], "c"]); }
+  if (TOWNS && z >= 5) for (const t of TOWNS.rows) { if (t[5] > lev + 1e-9) continue; pts.push([t[2], t[3], t[6] || 20000, t[0], t[1], t[5], t[4], "t"]); }
+  pts.sort((p, q) => q[2] - p[2]);
+  for (const p of pts) {
+    if (!b.contains([p[0], p[1]])) continue;
+    const q = map.latLngToContainerPoint([p[0], p[1]]), rad = Math.max(2.4, Math.min(11, Math.sqrt(p[2]) / 260 * (z >= 6 ? 1.6 : 1)));
+    ox.beginPath(); ox.arc(q.x, q.y, rad, 0, 7); ox.fillStyle = "rgba(200,73,47,.92)"; ox.fill(); ox.lineWidth = 1; ox.strokeStyle = "#fff"; ox.stroke();
+    dotsDrawn.push([q.x, q.y, rad, p]);
+  }
+}
+map.on("move zoom resize", () => { drawOverlay(); });
+map.on("resize", sizeOverlay);
+const mapEl = document.getElementById("map");
+mapEl.addEventListener("mousemove", e => {
+  const r = mapEl.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+  let best = null, bd = 12;
+  for (const d of dotsDrawn) { const dd = Math.hypot(d[0] - x, d[1] - y) - d[2]; if (dd < bd) { bd = dd; best = d; } }
+  if (best) { const p = best[3]; showTip(`<b>${esc(p[3])}</b>, ${esc(p[4])}<br>${p[7] === "c" ? "about " + fmt(p[2]) + " people<br>" : ""}centre height about ${fmt(p[6])} m<br>sea reaches it at about +${p[5]} m in the model`, e.clientX, e.clientY - 4); }
+  else hideTip();
+});
+mapEl.addEventListener("mouseleave", hideTip);
+
+/* place popups (search, table rows, dots) */
+function placePopup(name, area, lat, lon, height, fl, kind) {
+  const reach = fl >= 900 ? "The modelled sea does not reach it even at +70 m." : `In the model the sea first reaches within ${kind === "t" ? "about 200 m" : "one grid cell"} of this point at <b>about +${fl} m</b>.`;
+  L.popup().setLatLng([lat, lon]).setContent(`<div class="pop"><b class="t">${esc(name)}</b><div class="c">${esc(area)}</div>Centre point height: about ${fmt(height)} m above today's sea level (${kind === "t" ? "zoom-10 terrain" : "GeoNames"}).<br>${reach}<span class="w">A coarse bathtub model: indicative only, not a flood risk assessment.</span></div>`).openOn(map);
+}
+
+/* ---------------- instrument UI ---------------- */
+const slider = document.getElementById("slider"); slider.max = K - 1; slider.value = I0;
+slider.addEventListener("input", () => { stopPlay(); setLevel(+slider.value, "slider"); });
+const MARKS = [
+  [-125, "Ice Age low", "Last Glacial Maximum, 26,000 to 20,000 years ago: sea about 120 to 125 m lower"],
+  [R.island.gb_continent, "Britain an island", "In the model, Britain's last land link to the continent goes under"],
+  [0, "Today", "Today's coast"],
+  [1, "2100, high emissions", "IPCC AR6 likely range for 2100 is 0.63 to 1.01 m under very high emissions (0.28 to 0.55 m very low)"],
+  [7, "Greenland's ice", "The Greenland ice sheet holds about 7.4 m of sea level"],
+  [58, "Antarctica's ice", "The Antarctic ice sheet holds about 58 m of sea level"],
+  [70, "All ice", "Greenland, Antarctica and the world's glaciers together: about 65 to 70 m"],
+];
+const marks = document.getElementById("marks");
+for (const [v, name] of MARKS) { const b = document.createElement("button"); b.className = "btn"; b.textContent = `${name} ${sgn(v)} m`; b.onclick = () => { stopPlay(); setLevel(idxOf(v)); }; marks.appendChild(b); }
+const ticks = document.getElementById("ticks");
+function placeTicks() {
+  ticks.innerHTML = "";
+  for (const [v, name, , opt] of [[-125, "Ice Age"], [R.island.gb_continent, "island"], [0, "today"], [7, "Greenland"], [70, "all ice"]]) {
+    const b = document.createElement("button"); b.innerHTML = `${sgn(v)}<br>${name}`; b.style.left = (idxOf(v) / (K - 1) * 100) + "%";
+    if (name === "island" || name === "Greenland") b.className = "opt";
+    if (v === 70) b.className = "last";
+    b.onclick = () => { stopPlay(); setLevel(idxOf(v)); }; ticks.appendChild(b);
+  }
+}
+placeTicks();
+(() => { const bd = document.createElement("div"); bd.className = "band"; bd.title = "IPCC AR6 likely range for 2100, 0.28 to 1.01 m";
+  const a = idxOf(0.28) / (K - 1), z = idxOf(1.01) / (K - 1);
+  bd.style.left = `calc(14px + 7px + (100% - 42px) * ${a})`; bd.style.width = `calc((100% - 42px) * ${z - a} + 2px)`;
+  document.querySelector(".slidewrap").appendChild(bd); })();
+function context(v) {
+  if (v <= -120) return ["The Ice Age low", "At the Last Glacial Maximum, 26,000 to 20,000 years ago, the sea stood about 120 to 125 m lower than today. Britain is the north-west corner of Europe."];
+  if (v < R.island.gb_continent) return ["Britain joined to Europe", "Doggerland links eastern England to the Netherlands, Germany and Denmark. Wikipedia: it was inundated between 10,000 and 7,000 years ago."];
+  if (v < 0) return ["Britain an island", `In the model Britain's last land link goes under at ${sgn(R.island.gb_continent)} m. The Storegga tsunami struck about 8,200 years ago.`];
+  if (v === 0) return ["Today", "Today's coast, from Natural Earth. Land already below sea level (polders, fens) is kept dry by defences the model does not have."];
+  if (v <= 1.01) return ["The 2100 range", "IPCC AR6, likely range for 2100: 0.28 to 0.55 m (very low emissions) to 0.63 to 1.01 m (very high). At this scale, the model is at its weakest."];
+  if (v <= 6) return ["Centuries ahead", "IPCC AR6: over 2,000 years, about 2 to 3 m if warming stays at 1.5 °C, 2 to 6 m at 2 °C."];
+  if (v < 19) return ["Greenland's ice", "The Greenland ice sheet holds about 7.4 m of global sea level."];
+  if (v <= 22) return ["A 5 °C world", "IPCC AR6: with 5 °C of warming, 19 to 22 m over the next 2,000 years."];
+  if (v < 58) return ["Into Antarctica's share", "The Antarctic ice sheet holds about 58 m. Nothing like this is projected for centuries; it is the scale of what the ice holds."];
+  return ["All the ice", "Greenland (about 7.4 m) plus Antarctica (about 58 m) plus mountain glaciers: about 65 to 70 m."];
+}
+const lvlEl = document.getElementById("lvl"), ctxEl = document.getElementById("ctx");
+function updateHead() {
+  const v = lvl();
+  lvlEl.innerHTML = `${sgn(v)}<small> m</small>`; lvlEl.className = "level " + (v > 0 ? "up" : v < 0 ? "down" : "zero");
+  const [a, b] = context(v); ctxEl.innerHTML = `<b>${a}</b>${b}`;
+  document.getElementById("lvlh2").textContent = (v > 0 ? sgn(v) : "+7") + " m";
+  document.querySelectorAll(".lvlname").forEach(e => e.textContent = (v > 0 ? sgn(v) : "+7") + " m");
+}
+listeners.push(updateHead, repaintAll);
+
+/* readout */
+const RO = document.getElementById("readout");
+function readout() {
+  const v = lvl(), i = li, p = i - POS0;
+  let h = "";
+  if (v < 0) {
+    const dg = R.doggerland.land[i], bridgesOn = R.bridges.filter(b => b.at != null && v <= b.at).length;
+    h += `<div><b>${(R.world.gained[i] / 1e6).toFixed(1)} million km²</b><span>of sea floor exposed worldwide, outside Antarctica: <em>${pc(R.world.gained[i] / R.world.land, 1)}</em> on top of today's land</span></div>`;
+    h += `<div><b>${fmt(dg)} km²</b><span>of dry land in the Doggerland box, <em>${pc(dg / R.doggerland.sea, 0)}</em> of it</span></div>`;
+    h += `<div><b>${v <= R.island.gb_continent ? "Joined" : "Island"}</b><span>Britain ${v <= R.island.gb_continent ? "is joined to the continent" : "is an island"} in the model; Ireland ${v <= R.island.ie_gb ? "is joined to Britain" : "is separate"}</span></div>`;
+    h += `<div><b>${fmt(R.europe.exposed[i])} km²</b><span>of sea floor exposed in the Britain and North Sea window</span></div>`;
+    h += `<div><b>${bridgesOn} of ${R.bridges.length}</b><span>famous land bridges dry in the model (below)</span></div>`;
+    h += `<div><b>${(R.world.land / 1e6 + R.world.gained[i] / 1e6).toFixed(1)} million km²</b><span>of land in all, against ${(R.world.land / 1e6).toFixed(1)} million today (outside Antarctica)</span></div>`;
+  } else if (v === 0) {
+    h += `<div><b>${(R.world.land / 1e6).toFixed(1)} million km²</b><span>of land outside Antarctica in the grid</span></div>`;
+    h += `<div><b>${fmt(R.uk.land)} km²</b><span>of UK land in the 190 m grid</span></div>`;
+    h += `<div><b>${fmt(R.uk.below0)} km²</b><span>of UK land the model puts below today's sea level</span></div>`;
+  } else {
+    const ul = R.uk.lost[p], ub = R.uk.lost_b0[p];
+    h += `<div><b>${fmt(ul)} km²</b><span>of UK land drowned, <em>${pc(ul / R.uk.land, 1)}</em>, plus ${fmt(ub)} km² already below sea level</span></div>`;
+    h += `<div><b>${fmt(R.uk_towns.under[p])}</b><span>UK towns and cities (of ${fmt(R.uk_towns.n)}) with the centre point under water</span></div>`;
+    h += `<div><b>${big(R.msoa.under_pop[p])}</b><span>people in England and Wales whose neighbourhood centre is under water, <em>${pc(R.msoa.under_pop[p] / R.msoa.pop_total, 1)}</em></span></div>`;
+    h += `<div><b>${(R.world.lost[i] / 1e6).toFixed(2)} million km²</b><span>of land drowned worldwide, <em>${pc(R.world.lost[i] / R.world.land, 1)}</em>, plus ${(R.world.lost_b0[i] / 1e6).toFixed(2)} million km² already below sea level</span></div>`;
+    h += `<div><b>${fmt(R.cities.under_n[p])}</b><span>cities over 15,000 people (of ${fmt(R.cities.n)}) with the centre below the line</span></div>`;
+    h += `<div><b>${big(R.cities.under_pop[p])}</b><span>people live in those cities (GeoNames populations)</span></div>`;
+  }
+  RO.innerHTML = h;
+}
+listeners.push(readout);
+
+/* land bridges */
+const BR = document.getElementById("bridges");
+function bridges() {
+  const v = lvl();
+  BR.innerHTML = `<div class="lab0">Land bridges on today's seabed: joined when the sea is at or below</div>` + R.bridges.map((b, j) => `<button class="chip${b.at != null && v <= b.at ? " on" : ""}" data-j="${j}"><b>${sgn(b.at)} m</b> ${esc(b.name)}</button>`).join("");
+  BR.querySelectorAll(".chip").forEach(c => c.onclick = () => { stopPlay(); const b = R.bridges[+c.dataset.j]; setLevel(idxOf(b.at)); });
+}
+listeners.push(bridges);
+
+/* play: Ice Age to all ice in about 14 seconds */
+let playing = 0;
+const playB = document.getElementById("play");
+function stopPlay() { if (playing) { cancelAnimationFrame(playing); playing = 0; playB.textContent = "▶ Play"; } }
+playB.onclick = () => {
+  if (playing) return stopPlay();
+  if (li >= K - 1) setLevel(0);
+  playB.textContent = "❚❚ Pause"; let last = performance.now(), acc = 0;
+  const step = now => { acc += (now - last) / 1000 * 16; last = now; while (acc >= 1) { acc -= 1; if (li < K - 1) setLevel(li + 1); } if (li >= K - 1) return stopPlay(); playing = requestAnimationFrame(step); };
+  playing = requestAnimationFrame(step);
+};
+
+/* views */
+let view = "uk";
+document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => {
+  view = b.dataset.view; document.querySelectorAll("[data-view]").forEach(x => x.setAttribute("aria-pressed", x === b));
+  map.fitBounds(VIEWS[view]);
+});
+["coast", "dots"].forEach(id => document.getElementById(id).onchange = drawOverlay);
+document.getElementById("live").onchange = e => { useLive = e.target.checked; bath.redraw(); };
+
+/* ---------------- charts ---------------- */
+function lineChart(box, series, opt) {
+  resp(box, (w, small) => {
+    const H = small ? 230 : 260, m = { l: 46, r: 12, t: 12, b: 32 }, svg = el("svg", { viewBox: `0 0 ${w} ${H}`, role: "img", "aria-label": opt.aria }, box);
+    const x = v => m.l + (v - opt.x0) / (opt.x1 - opt.x0) * (w - m.l - m.r), y = v => H - m.b - (v - opt.y0) / (opt.y1 - opt.y0) * (H - m.t - m.b);
+    for (const v of opt.yt) { el("line", { x1: m.l, x2: w - m.r, y1: y(v), y2: y(v), stroke: "var(--rule)" }, svg); lbl(svg, m.l - 6, y(v) + 4, opt.yf(v), "lab m", "end"); }
+    for (const v of opt.xt) lbl(svg, x(v), H - 10, sgn(v), "lab m", "middle");
+    if (opt.zero) el("line", { x1: x(0), x2: x(0), y1: m.t, y2: H - m.b, stroke: "var(--muted)", "stroke-dasharray": "2 3" }, svg);
+    for (const s of series) {
+      let d = ""; s.pts.forEach(([a, b], k) => { d += (k ? "L" : "M") + x(a).toFixed(1) + " " + y(b).toFixed(1); });
+      el("path", { d, fill: "none", stroke: s.col, "stroke-width": 2.4, "stroke-linejoin": "round" }, svg);
+      if (s.label) lbl(svg, x(s.pts[s.lx][0]) + 4, y(s.pts[s.lx][1]) - 6, s.label, "lab b").setAttribute("fill", s.col);
+    }
+    const cur = el("line", { y1: m.t, y2: H - m.b, stroke: "var(--hot)", "stroke-width": 1.5 }, svg);
+    const dots = series.map(s => el("circle", { r: 4, fill: s.col, stroke: "var(--card)", "stroke-width": 1.5 }, svg));
+    const upd = () => {
+      const v = Math.max(opt.x0, Math.min(opt.x1, lvl())); cur.setAttribute("x1", x(v)); cur.setAttribute("x2", x(v));
+      series.forEach((s, k) => { const pt = s.pts.reduce((a, b) => Math.abs(b[0] - v) < Math.abs(a[0] - v) ? b : a); dots[k].setAttribute("cx", x(pt[0])); dots[k].setAttribute("cy", y(pt[1])); dots[k].style.display = (lvl() < opt.x0 || lvl() > opt.x1) ? "none" : ""; });
+    };
+    upd(); box._upd = upd;
+    const hit = el("rect", { x: m.l, y: m.t, width: w - m.l - m.r, height: H - m.t - m.b, fill: "transparent", style: "cursor:crosshair" }, svg);
+    const at = ev => { const r = svg.getBoundingClientRect(); return opt.x0 + ((ev.clientX - r.left) * w / r.width - m.l) / (w - m.l - m.r) * (opt.x1 - opt.x0); };
+    hit.addEventListener("pointermove", ev => { const v = at(ev); const j = idxOf(v); showTip(`<b>${sgn(LV[j])} m</b><br>` + series.map(s => `${s.name}: ${opt.tf(s.pts.reduce((a, b) => Math.abs(b[0] - LV[j]) < Math.abs(a[0] - LV[j]) ? b : a)[1])}`).join("<br>"), ev.clientX, ev.clientY - 6); });
+    hit.addEventListener("pointerleave", hideTip);
+    hit.addEventListener("click", ev => { stopPlay(); setLevel(idxOf(at(ev))); });
+  });
+  listeners.push(() => box._upd && box._upd());
+}
+const dogPts = LV.map((v, i) => [v, R.doggerland.land[i] / 1000]).filter(p => p[0] <= 0);
+lineChart(document.getElementById("chDog"), [{ name: "Doggerland", col: "var(--sand)", pts: dogPts }],
+  { x0: -130, x1: 0, y0: 0, y1: 350, xt: [-120, -90, -60, -30, 0], yt: [0, 100, 200, 300], yf: v => v + "k", tf: v => fmt(v * 1000) + " km²", aria: "Doggerland dry land by sea level" });
+const wPts = LV.map((v, i) => [v, v < 0 ? R.world.gained[i] / 1e6 : -(R.world.lost[i]) / 1e6]);
+const wPtsB = LV.map((v, i) => [v, v < 0 ? R.world.gained[i] / 1e6 : -(R.world.lost[i] + R.world.lost_b0[i]) / 1e6]);
+lineChart(document.getElementById("chWorld"), [{ name: "with land below sea level", col: "var(--violet)", pts: wPtsB }, { name: "change in land", col: "var(--hot)", pts: wPts }],
+  { x0: -130, x1: 70, y0: -18, y1: 21, xt: [-120, -60, 0, 60], yt: [-15, -10, -5, 0, 5, 10, 15, 20], yf: v => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v), tf: v => (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(2) + " million km²", zero: true, aria: "World land gained and lost by sea level" });
+const ukL = LV.map((v, i) => [v, v <= 0 ? 0 : R.uk.lost[i - POS0] / R.uk.land * 100]);
+const ukP = LV.map((v, i) => [v, v <= 0 ? 0 : R.msoa.under_pop[i - POS0] / R.msoa.pop_total * 100]);
+lineChart(document.getElementById("chUK"), [{ name: "UK land drowned", col: "var(--hot)", pts: ukL.filter(p => p[0] >= 0) }, { name: "people (England and Wales)", col: "var(--sea)", pts: ukP.filter(p => p[0] >= 0) }],
+  { x0: 0, x1: 70, y0: 0, y1: 65, xt: [0, 10, 20, 30, 40, 50, 60, 70], yt: [0, 20, 40, 60], yf: v => v + "%", tf: v => v.toFixed(1) + "%", aria: "UK land and people under water by sea level" });
+
+/* ---------------- tables ---------------- */
+const CN = Object.fromEntries(R.countries.map(c => [c.a3, c]));
+function tables() {
+  const v = lvl() > 0 ? lvl() : 7, p = idxOf(v) - POS0;
+  const rows = R.countries.filter(c => c.land >= 20000).map(c => ({ c, lost: c.lost[p], share: c.lost[p] / c.land }));
+  const byA = [...rows].sort((a, b) => b.lost - a.lost).slice(0, 10), byS = [...rows].sort((a, b) => b.share - a.share).slice(0, 5);
+  const mx = byA[0] ? byA[0].lost : 1;
+  document.getElementById("tCountries").innerHTML = `<table class="t"><thead><tr><th>Country</th><th class="num">km²</th><th class="num">share</th></tr></thead><tbody>` +
+    byA.map(r => `<tr><td>${esc(r.c.name)}<div class="bar" style="width:${(r.lost / mx * 100).toFixed(1)}%"></div></td><td class="num">${fmt(r.lost)}</td><td class="num">${pc(r.share, 1)}</td></tr>`).join("") +
+    `<tr><td colspan="3"><small>Largest shares: ${byS.map(r => `${esc(r.c.name)} ${pc(r.share, 0)}`).join(", ")}</small></td></tr></tbody></table>`;
+  const cs = CITIES ? CITIES.rows.filter(c => c[5] <= v + 1e-9).slice(0, 10) : [];
+  document.getElementById("tCities").innerHTML = CITIES ? `<table class="t"><thead><tr><th>City</th><th class="num">people</th><th class="num">height</th></tr></thead><tbody>` +
+    cs.map(c => `<tr class="go" data-c='${esc(JSON.stringify(c))}'><td>${esc(c[0])} <small>${esc(c[1])}</small></td><td class="num">${fmt(c[4])}</td><td class="num">${c[6]} m</td></tr>`).join("") + `</tbody></table>` : "<p class='src'>Loading cities…</p>";
+  document.querySelectorAll("#tCities tr.go").forEach(tr => tr.onclick = () => { const c = JSON.parse(tr.dataset.c); map.setView([c[2], c[3]], 8); placePopup(c[0], c[1], c[2], c[3], c[6], c[5], "c"); document.getElementById("map").scrollIntoView({ behavior: "smooth", block: "center" }); });
+  const ts = TOWNS ? TOWNS.rows.filter(t => t[5] <= v + 1e-9).sort((a, b) => a[5] - b[5] || b[6] - a[6]) : [];
+  document.getElementById("tTowns").innerHTML = TOWNS ? `<table class="t"><thead><tr><th>Town</th><th class="num">centre height</th><th class="num">sea reaches it</th></tr></thead><tbody>` +
+    ts.slice(0, 25).map(t => `<tr class="go" data-t='${esc(JSON.stringify(t))}'><td>${esc(t[0])} <small>${esc(t[1])}</small></td><td class="num">${t[4].toFixed(1)} m</td><td class="num">+${t[5].toFixed(1)} m</td></tr>`).join("") +
+    `<tr><td colspan="3"><small>${fmt(ts.length)} of ${fmt(TOWNS.rows.length)} places below the line${ts.length > 25 ? "; the 25 lowest shown" : ""}.</small></td></tr></tbody></table>` : "";
+  document.querySelectorAll("#tTowns tr.go").forEach(tr => tr.onclick = () => { const t = JSON.parse(tr.dataset.t); map.setView([t[2], t[3]], 10); placePopup(t[0], t[1], t[2], t[3], t[4], t[5], "t"); document.getElementById("map").scrollIntoView({ behavior: "smooth", block: "center" }); });
+}
+let tblT = 0;
+listeners.push(() => { clearTimeout(tblT); tblT = setTimeout(tables, playing ? 250 : 40); });
+
+/* ---------------- search ---------------- */
+const q = document.getElementById("q"), sug = document.getElementById("sug"), ans = document.getElementById("answer");
+const norm = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+let INDEX = [];
+function buildIndex() {
+  INDEX = [];
+  if (TOWNS) for (const t of TOWNS.rows) INDEX.push({ n: norm(t[0]), name: t[0], area: t[1], lat: t[2], lon: t[3], h: t[4], fl: t[5], pop: t[6] || 0, k: "t" });
+  if (CITIES) for (const c of CITIES.rows) if (c[1] !== "GB") INDEX.push({ n: norm(c[0]), name: c[0], area: c[1], lat: c[2], lon: c[3], h: c[6], fl: c[5], pop: c[4], k: "c" });
+}
+let sel = -1, cur = [];
+q.addEventListener("input", () => {
+  const s = norm(q.value.trim()); sel = -1;
+  if (s.length < 2) { sug.style.display = "none"; q.setAttribute("aria-expanded", "false"); return; }
+  cur = INDEX.filter(e => e.n.startsWith(s)).sort((a, b) => (a.k === "t" ? 0 : 1) - (b.k === "t" ? 0 : 1) || b.pop - a.pop).slice(0, 10);
+  if (cur.length < 10) cur = cur.concat(INDEX.filter(e => !e.n.startsWith(s) && e.n.includes(s)).sort((a, b) => b.pop - a.pop).slice(0, 10 - cur.length));
+  sug.innerHTML = cur.map((e, i) => `<li role="option" data-i="${i}">${esc(e.name)} <span>${esc(e.area)}</span></li>`).join("");
+  sug.style.display = cur.length ? "block" : "none"; q.setAttribute("aria-expanded", cur.length ? "true" : "false");
+  sug.querySelectorAll("li").forEach(li => li.onclick = () => choose(cur[+li.dataset.i]));
+});
+q.addEventListener("keydown", e => {
+  const items = sug.querySelectorAll("li"); if (!items.length) return;
+  if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); sel = (sel + (e.key === "ArrowDown" ? 1 : -1) + items.length) % items.length; items.forEach((x, i) => x.setAttribute("aria-selected", i === sel)); }
+  if (e.key === "Enter") { e.preventDefault(); choose(cur[Math.max(0, sel)]); }
+  if (e.key === "Escape") { sug.style.display = "none"; }
+});
+function choose(e) {
+  if (!e) return; sug.style.display = "none"; q.value = e.name; q.setAttribute("aria-expanded", "false");
+  const never = e.fl >= 900;
+  ans.innerHTML = `<div class="big">${esc(e.name)}: ${never ? "the modelled sea does not reach its centre even at +70 m" : `the modelled sea reaches its centre at about +${e.fl} m`}</div>
+  <div class="pn">Centre point height about ${fmt(e.h)} m (${e.k === "t" ? "zoom-10 terrain, about 95 to 150 m cells" : "GeoNames"}). ${e.k === "t" ? (e.pop ? `Built-up area population (Census 2021): ${fmt(e.pop)}. ` : "") : `Population (GeoNames): ${fmt(e.pop)}. `}${never ? "" : `<a href="#map" id="goLvl">Set the sea to +${e.fl} m and show it on the map</a>. `}This is a coarse bathtub model and says nothing reliable about individual streets or houses.</div>`;
+  const go = document.getElementById("goLvl");
+  if (go) go.onclick = ev => { ev.preventDefault(); stopPlay(); setLevel(idxOf(e.fl)); map.setView([e.lat, e.lon], e.k === "t" ? 10 : 8); placePopup(e.name, e.area, e.lat, e.lon, e.h, e.fl, e.k); document.getElementById("map").scrollIntoView({ behavior: "smooth", block: "center" }); };
+}
+
+/* ---------------- start ---------------- */
+(async () => {
+  sizeOverlay(); map.fitBounds(VIEWS.uk);
+  try {
+    await loadSrc("world");
+    await loadSrc("europe");
+  } catch (err) { document.getElementById("loading").textContent = "The elevation model could not be loaded."; return; }
+  buildLUT(); bath.addTo(map);
+  document.getElementById("loading").remove();
+  setLevel(idxOf(-40));
+  fetch("data/coast.json").then(r => r.json()).then(j => { COAST = j; drawOverlay(); });
+  fetch("data/cities_page.json").then(r => r.json()).then(j => { CITIES = j; buildIndex(); tables(); drawOverlay(); });
+  fetch("data/uk_towns_page.json").then(r => r.json()).then(j => { TOWNS = j; buildIndex(); tables(); drawOverlay(); });
+})();
+updateHead(); readout(); bridges(); tables();
+</script>
+</body>
+</html>
