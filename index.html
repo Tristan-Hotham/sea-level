@@ -205,6 +205,7 @@ footer p{margin:0 0 10px}
     </div>
     <label class="chk"><input type="checkbox" id="coast" checked> today's coast</label>
     <label class="chk"><input type="checkbox" id="dots" checked> places under water</label>
+    <label class="chk"><input type="checkbox" id="labels" checked> place names</label>
     <label class="chk"><input type="checkbox" id="live" checked> sharper terrain when zoomed in</label>
   </div>
   <div class="mapwrap"><div id="map" role="img" aria-label="Map of land and sea at the chosen sea level"></div><canvas id="overlay"></canvas><div class="loading" id="loading">Loading the elevation model…</div></div>
@@ -412,6 +413,34 @@ function nbMin(isEu, x, y) {
 /* ---------------- the map ---------------- */
 const map = L.map("map", { zoomControl: true, minZoom: 1, maxZoom: 12, worldCopyJump: true, preferCanvas: true, attributionControl: true });
 map.attributionControl.setPrefix('<a href="https://leafletjs.com">Leaflet</a>');
+/* place names: Esri reference labels in their own pane above the modelled land and sea, plus our own sea labels */
+map.createPane("labels"); map.getPane("labels").style.zIndex = 450; map.getPane("labels").style.pointerEvents = "none";
+const labelURL = () => `https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/${isDark() ? "World_Dark_Gray_Reference" : "World_Light_Gray_Reference"}/MapServer/tile/{z}/{y}/{x}`;
+const labels = L.tileLayer(labelURL(), { pane: "labels", maxZoom: 16, updateWhenZooming: false,
+  attribution: 'Place names: Esri, HERE, Garmin, &copy; OpenStreetMap contributors' }).addTo(map);
+document.getElementById("labels").addEventListener("change", e => { if (e.target.checked) labels.addTo(map); else map.removeLayer(labels); drawOverlay(); });
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => labels.setUrl(labelURL()));
+const SEAS = [ // [lat, lon, name, minZoom, maxZoom]
+  [56.6, 3.2, "North Sea", 4, 9], [50.15, -2.2, "English Channel", 5, 9], [53.9, -4.9, "Irish Sea", 5, 9], [54.8, 2.3, "Dogger Bank", 5, 9],
+  [51.6, 2.3, "Southern Bight", 6, 9], [57.2, 8.6, "Skagerrak", 5, 9], [55.6, 17.5, "Baltic Sea", 4, 9], [56.5, -12.5, "Atlantic Ocean", 4, 7],
+  [48.6, -6.8, "Celtic Sea", 5, 9], [57.4, -7.7, "Sea of the Hebrides", 6, 9], [60.4, -2.4, "Norwegian Sea", 5, 8], [51.9, -0.8, "", 99, 99],
+  [25, -40, "Atlantic Ocean", 1, 3], [0, -140, "Pacific Ocean", 1, 3], [-20, 80, "Indian Ocean", 1, 3], [-60, 0, "Southern Ocean", 1, 3], [80, 0, "Arctic Ocean", 1, 3],
+  [61, -175, "Bering Sea", 3, 6], [7, 112, "South China Sea", 3, 6], [27, 92, "Bay of Bengal", 3, 4], [35, 17, "Mediterranean Sea", 3, 5], [26, -90, "Gulf of Mexico", 3, 6]
+];
+function seaLabels(z) {
+  if (!document.getElementById("labels").checked) return;
+  ox.save(); ox.font = "italic 500 12px 'Source Serif 4', Georgia, serif"; ox.textAlign = "center"; ox.lineJoin = "round";
+  const b = map.getBounds(), cw = map.getCenter().lng;
+  for (const [la, lo0, name, z0, z1] of SEAS) {
+    if (!name || z < z0 || z > z1) continue;
+    let lo = lo0; while (lo - cw > 180) lo -= 360; while (lo - cw < -180) lo += 360;
+    if (!b.contains([la, lo])) continue;
+    const p = map.latLngToContainerPoint([la, lo]);
+    ox.lineWidth = 3; ox.strokeStyle = isDark() ? "rgba(0,0,0,.7)" : "rgba(255,255,255,.8)"; ox.strokeText(name, p.x, p.y);
+    ox.fillStyle = isDark() ? "#BFD9E6" : "#1F4E68"; ox.fillText(name, p.x, p.y);
+  }
+  ox.restore();
+}
 const VIEWS = { uk: [[48.3, -11.5], [61.3, 10.2]], world: [[-58, -170], [75, 175]] };
 const tiles = new Map();
 let useLive = true;
@@ -523,6 +552,7 @@ function drawOverlay() {
     ox.setLineDash([5, 4]); ox.strokeStyle = "rgba(19,36,44,.6)"; ox.lineWidth = 1; ox.strokeRect(a.x, a.y, c.x - a.x, c.y - a.y); ox.setLineDash([]);
     ox.font = "500 11px 'IBM Plex Mono', monospace"; ox.fillStyle = "rgba(19,36,44,.8)"; ox.fillText("Doggerland box", a.x + 4, a.y + 13);
   }
+  seaLabels(z);
   if (!document.getElementById("dots").checked || lev <= 0) return;
   const minPop = z <= 2 ? 1e6 : z <= 3 ? 4e5 : z <= 4 ? 1.5e5 : z <= 6 ? 5e4 : 0;
   const pts = [];
