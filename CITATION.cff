@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: "If you use this data or code, please cite it as below."
+title: "Drowned and Rising: A Bathtub Model of Britain and the World from the Last Glacial Maximum to an Ice-Free Earth"
+type: dataset
+authors:
+  - family-names: Hotham
+    given-names: Tristan
+    orcid: "https://orcid.org/0000-0003-4931-9349"
+    affiliation: "Independent researcher"
+doi: "10.5281/zenodo.23732578"
+url: "https://maps.tristanhotham.com/sea-level/"
+repository-code: "https://github.com/Tristan-Hotham/sea-level"
+license: CC-BY-4.0
+keywords:
+  - "sea level"
+  - "bathtub model"
+  - "Doggerland"
+  - "Last Glacial Maximum"
+  - "land bridges"
+  - "sea-level rise"
+  - "ice sheets"
+  - "United Kingdom"
+  - "digital elevation model"
+  - "open data"
